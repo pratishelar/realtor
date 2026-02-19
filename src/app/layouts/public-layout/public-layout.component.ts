@@ -10,15 +10,11 @@ import { FooterComponent } from '../../components/footer/footer.component';
   imports: [CommonModule, RouterModule, NavbarComponent, FooterComponent],
   template: `
     <app-navbar></app-navbar>
-    <div class="public-layout-content">
+    <div class="public-layout-content container-fluid px-0">
       <router-outlet></router-outlet>
     </div>
     <app-footer></app-footer>
   `,
-  styles: [`
-    .public-layout-content {
-      min-height: calc(100vh - 200px);
-    }
-  `]
+  styles: []
 })
 export class PublicLayoutComponent {}

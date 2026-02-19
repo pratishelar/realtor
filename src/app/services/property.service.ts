@@ -13,15 +13,34 @@ export class PropertyService {
     this.propertiesCollection = collection(this.firestore, 'properties');
   }
 
+  private normalizeProperty(id: string, data: any): Property {
+    const safeData = data || {};
+    return {
+      id,
+      title: (safeData.title || '').toString(),
+      description: (safeData.description || '').toString(),
+      price: Number(safeData.price || 0),
+      location: (safeData.location || '').toString(),
+      bedrooms: Number(safeData.bedrooms || 0),
+      bathrooms: Number(safeData.bathrooms || 0),
+      area: Number(safeData.area || 0),
+      images: Array.isArray(safeData.images) ? safeData.images.filter(Boolean) : [],
+      amenities: Array.isArray(safeData.amenities) ? safeData.amenities.filter(Boolean) : [],
+      features: Array.isArray(safeData.features) ? safeData.features.filter(Boolean) : [],
+      owner: (safeData.owner || '').toString(),
+      phone: safeData.phone ? safeData.phone.toString() : undefined,
+      email: safeData.email ? safeData.email.toString() : undefined,
+      createdAt: safeData.createdAt,
+      updatedAt: safeData.updatedAt,
+      possessionStatus: safeData.possessionStatus,
+    };
+  }
+
   // Get all properties
   getProperties(): Observable<Property[]> {
     return from(
-      getDocs(this.propertiesCollection).then((snapshot) =>
-        snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        } as Property))
-      )
+      getDocs(this.propertiesCollection)
+        .then((snapshot) => snapshot.docs.map((snap) => this.normalizeProperty(snap.id, snap.data())))
     );
   }
 
@@ -30,17 +49,7 @@ export class PropertyService {
     return from(
       getDoc(doc(this.propertiesCollection, id)).then((snapshot) => {
         if (snapshot.exists()) {
-          const data = snapshot.data();
-          console.log('PropertyService - Raw Firestore data:', data);
-          console.log('PropertyService - Data type:', typeof data);
-          console.log('PropertyService - Data keys:', Object.keys(data || {}));
-          console.log('PropertyService - Images field:', data?.['images']);
-          
-          const property = { id: snapshot.id, ...data } as Property;
-          console.log('PropertyService - Final property object:', property);
-          console.log('PropertyService - Final property images:', property.images);
-          
-          return property;
+          return this.normalizeProperty(snapshot.id, snapshot.data());
         }
         return null;
       })
@@ -52,7 +61,7 @@ export class PropertyService {
     return from(
       getDocs(this.propertiesCollection).then((snapshot) =>
         snapshot.docs
-          .map((doc) => ({ id: doc.id, ...doc.data() } as Property))
+          .map((snap) => this.normalizeProperty(snap.id, snap.data()))
           .filter(
             (prop) =>
               prop.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -68,7 +77,7 @@ export class PropertyService {
     return from(
       getDocs(this.propertiesCollection).then((snapshot) =>
         snapshot.docs
-          .map((doc) => ({ id: doc.id, ...doc.data() } as Property))
+          .map((snap) => this.normalizeProperty(snap.id, snap.data()))
           .filter((prop) => prop.price >= minPrice && prop.price <= maxPrice)
       )
     );

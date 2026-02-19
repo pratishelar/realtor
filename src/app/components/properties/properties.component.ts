@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { PropertyService } from '../../services/property.service';
 import { Property } from '../../models/property.model';
 
@@ -10,523 +10,331 @@ import { Property } from '../../models/property.model';
   standalone: true,
   imports: [CommonModule, FormsModule, RouterModule],
   template: `
-    <div class="properties-wrapper">
-      <div class="sidebar-filters">
-        <h3>Filter Properties</h3>
-        
-        <!-- Search Bar -->
-        <div class="filter-section">
-          <label>Search</label>
-          <input
-            type="text"
-            placeholder="Search by title, location..."
-            [(ngModel)]="searchQuery"
-            (keyup)="applyFilters()"
-            class="search-input"
-          />
-        </div>
-
-        <!-- Price Range -->
-        <div class="filter-section">
-          <label>Price Range</label>
-          <div class="price-inputs">
-            <div class="input-group">
-              <label class="small-label">Min Price</label>
-              <input
-                type="number"
-                [(ngModel)]="minPrice"
-                (change)="applyFilters()"
-                class="number-input"
-                placeholder="Min"
-              />
-            </div>
-            <div class="input-group">
-              <label class="small-label">Max Price</label>
-              <input
-                type="number"
-                [(ngModel)]="maxPrice"
-                (change)="applyFilters()"
-                class="number-input"
-                placeholder="Max"
-              />
-            </div>
-          </div>
-          <div class="price-display">\${{ minPrice | number }} - \${{ maxPrice | number }}</div>
-        </div>
-
-        <!-- Bedrooms -->
-        <div class="filter-section">
-          <label>Bedrooms</label>
-          <select [(ngModel)]="selectedBedrooms" (change)="applyFilters()" class="select-input">
-            <option [ngValue]="null">All</option>
-            <option [ngValue]="1">1</option>
-            <option [ngValue]="2">2</option>
-            <option [ngValue]="3">3</option>
-            <option [ngValue]="4">4</option>
-            <option [ngValue]="5">5+</option>
-          </select>
-        </div>
-
-        <!-- Bathrooms -->
-        <div class="filter-section">
-          <label>Bathrooms</label>
-          <select [(ngModel)]="selectedBathrooms" (change)="applyFilters()" class="select-input">
-            <option [ngValue]="null">All</option>
-            <option [ngValue]="1">1</option>
-            <option [ngValue]="2">2</option>
-            <option [ngValue]="3">3</option>
-            <option [ngValue]="4">4+</option>
-          </select>
-        </div>
-
-        <!-- Property Category -->
-        <div class="filter-section">
-          <label>Category</label>
-          <div class="checkbox-group">
-            <label class="checkbox-label">
-              <input type="checkbox" [(ngModel)]="selectedResidential" (change)="applyFilters()" />
-              Residential
-            </label>
-            <label class="checkbox-label">
-              <input type="checkbox" [(ngModel)]="selectedCommercial" (change)="applyFilters()" />
-              Commercial
-            </label>
-          </div>
-        </div>
-
-        <!-- Property Type -->
-        <div class="filter-section">
-          <label>Property Type</label>
-          <div class="checkbox-group">
-            <label class="checkbox-label">
-              <input type="checkbox" (change)="applyFilters()" />
-              Apartment
-            </label>
-            <label class="checkbox-label">
-              <input type="checkbox" (change)="applyFilters()" />
-              House
-            </label>
-            <label class="checkbox-label">
-              <input type="checkbox" (change)="applyFilters()" />
-              Villa
-            </label>
-            <label class="checkbox-label">
-              <input type="checkbox" (change)="applyFilters()" />
-              Condo
-            </label>
-          </div>
-        </div>
-
-        <!-- Area/Size -->
-        <div class="filter-section">
-          <label>Minimum Area (sqft)</label>
-          <input
-            type="number"
-            [(ngModel)]="minArea"
-            (change)="applyFilters()"
-            class="number-input"
-            placeholder="Min sqft"
-          />
-        </div>
-
-        <!-- Sort Options -->
-        <div class="filter-section">
-          <label>Sort By</label>
-          <select [(ngModel)]="sortBy" (change)="applyFilters()" class="select-input">
-            <option value="newest">Newest First</option>
-            <option value="price-low">Price: Low to High</option>
-            <option value="price-high">Price: High to Low</option>
-            <option value="size">Size: Large to Small</option>
-          </select>
-        </div>
-
-        <!-- Reset Filters -->
-        <button (click)="resetFilters()" class="btn-reset">Reset All Filters</button>
+    <div class="container-fluid py-4">
+      <!-- Mobile Filter Toggle Button -->
+      <div class="d-lg-none mb-3">
+        <button class="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2" (click)="toggleFilters()">
+          <span>{{ showFilters ? '✕' : '☰' }}</span>
+          <span>{{ showFilters ? 'Hide Filters' : 'Show Filters' }}</span>
+        </button>
       </div>
+      
+      <div class="row g-4">
+        <div class="col-12 col-lg-3" [class.d-none]="!showFilters" [class.d-lg-block]="true">
+          <div class="sidebar-filters card p-4">
+            <h3 class="mb-4">Filter Properties</h3>
+            
+            <!-- Category (moved to top) -->
+            <div class="filter-section mb-4">
+              <label class="form-label fw-bold">Category</label>
+              <div class="checkbox-group">
+                <div class="form-check mb-2">
+                  <input type="checkbox" class="form-check-input" id="cat-residential" [(ngModel)]="selectedResidential" (change)="applyFilters()" />
+                  <label class="form-check-label" for="cat-residential">Residential</label>
+                </div>
+                <div class="form-check mb-2">
+                  <input type="checkbox" class="form-check-input" id="cat-commercial" [(ngModel)]="selectedCommercial" (change)="applyFilters()" />
+                  <label class="form-check-label" for="cat-commercial">Commercial</label>
+                </div>
+              </div>
+            </div>
 
-      <div class="main-content">
-        <div class="results-header">
-          <h2>Properties</h2>
-          <span class="results-count">{{ filteredProperties.length }} properties found</span>
-        </div>
+            <!-- Property Type (moved to top) -->
+            <div class="filter-section mb-4">
+              <label class="form-label fw-bold">Property Type</label>
+              <div class="checkbox-group">
+                <div class="form-check mb-2">
+                  <input type="checkbox" class="form-check-input" (change)="applyFilters()" />
+                  <label class="form-check-label">Apartment</label>
+                </div>
+                <div class="form-check mb-2">
+                  <input type="checkbox" class="form-check-input" (change)="applyFilters()" />
+                  <label class="form-check-label">House</label>
+                </div>
+                <div class="form-check mb-2">
+                  <input type="checkbox" class="form-check-input" (change)="applyFilters()" />
+                  <label class="form-check-label">Villa</label>
+                </div>
+                <div class="form-check mb-2">
+                  <input type="checkbox" class="form-check-input" (change)="applyFilters()" />
+                  <label class="form-check-label">Condo</label>
+                </div>
+              </div>
+            </div>
 
-        <div *ngIf="loading" class="loading">Loading properties...</div>
+            <!-- Possession Status -->
+            <div class="filter-section mb-4">
+              <label class="form-label fw-bold">Possession Status</label>
+              <div class="checkbox-group">
+                <div class="form-check mb-2">
+                  <input type="checkbox" class="form-check-input" id="resale" [(ngModel)]="selectedResale" (change)="applyFilters()" />
+                  <label class="form-check-label" for="resale">Resale / Ready to Move</label>
+                </div>
+                <div class="form-check mb-2">
+                  <input type="checkbox" class="form-check-input" id="construction" [(ngModel)]="selectedUnderConstruction" (change)="applyFilters()" />
+                  <label class="form-check-label" for="construction">Under Construction</label>
+                </div>
+              </div>
+            </div>
 
-        <div *ngIf="!loading && filteredProperties.length === 0" class="no-results">
-          <p>No properties match your filters.</p>
-          <button (click)="resetFilters()" class="btn-reset">Clear Filters</button>
-        </div>
-
-        <div class="properties-grid">
-          <div *ngFor="let property of filteredProperties" class="property-card">
-            <div class="property-image">
-              <img
-                *ngIf="property.images && property.images.length > 0"
-                [src]="property.images[0]"
-                [alt]="property.title"
+            <!-- Search Bar -->
+            <div class="filter-section mb-4">
+              <label class="form-label fw-bold">Search</label>
+              <input
+                type="text"
+                placeholder="Search by title, location..."
+                [(ngModel)]="searchQuery"
+                (keyup)="applyFilters()"
+                class="form-control"
               />
-              <div *ngIf="!property.images || property.images.length === 0" class="no-image">
-                No Image Available
-              </div>
-              <div class="price-badge">\${{ property.price | number }}</div>
             </div>
-            <div class="property-details">
-              <h3>{{ property.title }}</h3>
-              <p class="location">📍 {{ property.location }}</p>
-              <div class="specs">
-                <span class="spec">🛏️ {{ property.bedrooms }} beds</span>
-                <span class="spec">🚿 {{ property.bathrooms }} baths</span>
-                <span class="spec">📐 {{ property.area | number }} sqft</span>
+
+            <!-- Price Range -->
+            <div class="filter-section mb-4">
+              <label class="form-label fw-bold">Price Range</label>
+              <div class="mb-3">
+                <label class="form-label small">Min Price</label>
+                <input
+                  type="number"
+                  [(ngModel)]="minPrice"
+                  (change)="applyFilters()"
+                  class="form-control"
+                  placeholder="Min"
+                />
               </div>
-              <p class="description">{{ property.description | slice: 0: 100 }}...</p>
-              <a [routerLink]="['/property', property.id]" class="btn btn-view">View Details</a>
+              <div class="mb-3">
+                <label class="form-label small">Max Price</label>
+                <input
+                  type="number"
+                  [(ngModel)]="maxPrice"
+                  (change)="applyFilters()"
+                  class="form-control"
+                  placeholder="Max"
+                />
+              </div>
+              <div class="text-muted small">\${{ minPrice | number }} - \${{ maxPrice | number }}</div>
             </div>
+
+            <!-- Bedrooms -->
+            <div class="filter-section mb-4">
+              <label class="form-label fw-bold">Bedrooms</label>
+              <select [(ngModel)]="selectedBedrooms" (change)="applyFilters()" class="form-select">
+                <option [ngValue]="null">All</option>
+                <option [ngValue]="1">1</option>
+                <option [ngValue]="2">2</option>
+                <option [ngValue]="3">3</option>
+                <option [ngValue]="4">4</option>
+                <option [ngValue]="5">5+</option>
+              </select>
+            </div>
+
+            <!-- Bathrooms -->
+            <div class="filter-section mb-4">
+              <label class="form-label fw-bold">Bathrooms</label>
+              <select [(ngModel)]="selectedBathrooms" (change)="applyFilters()" class="form-select">
+                <option [ngValue]="null">All</option>
+                <option [ngValue]="1">1</option>
+                <option [ngValue]="2">2</option>
+                <option [ngValue]="3">3</option>
+                <option [ngValue]="4">4+</option>
+              </select>
+            </div>
+
+
+            <!-- Area/Size -->
+            <div class="filter-section mb-4">
+              <label class="form-label fw-bold">Minimum Area (sqft)</label>
+              <input
+                type="number"
+                [(ngModel)]="minArea"
+                (change)="applyFilters()"
+                class="form-control"
+                placeholder="Min sqft"
+              />
+            </div>
+
+            <!-- Sort Options -->
+            <div class="filter-section mb-4">
+              <label class="form-label fw-bold">Sort By</label>
+              <select [(ngModel)]="sortBy" (change)="applyFilters()" class="form-select">
+                <option value="newest">Newest First</option>
+                <option value="price-low">Price: Low to High</option>
+                <option value="price-high">Price: High to Low</option>
+                <option value="size">Size: Large to Small</option>
+              </select>
+            </div>
+
+            <!-- Reset Filters -->
+            <button (click)="resetFilters()" class="btn btn-outline-secondary w-100">Reset All Filters</button>
+          </div>
+        </div>
+
+        <div class="col-12 col-lg-9">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="mb-0">Properties</h2>
+            <span class="badge bg-primary">{{ filteredProperties.length }} found</span>
+          </div>
+
+          <div *ngIf="loading" class="text-center py-5">
+            <div class="spinner-border" role="status">
+              <span class="visually-hidden">Loading properties...</span>
+            </div>
+          </div>
+
+          <div *ngIf="!loading && loadError" class="alert alert-warning d-flex justify-content-between align-items-center" role="alert">
+            <span>{{ loadError }}</span>
+            <button class="btn btn-sm btn-outline-dark" (click)="loadProperties()">Retry</button>
+          </div>
+
+          <div *ngIf="!loading && !loadError && filteredProperties.length === 0" class="text-center py-5">
+            <p class="text-muted mb-3">No properties match your filters.</p>
+            <button (click)="resetFilters()" class="btn btn-outline-secondary">Clear Filters</button>
+          </div>
+
+          <div class="row g-3">
+            <div *ngFor="let property of visibleProperties; trackBy: trackByPropertyId" class="col-12">
+              <div class="property-listing-card card overflow-hidden border-0 shadow-sm" (click)="openPropertyDetails(property.id)" (keypress)="onCardKeypress($event, property.id)" tabindex="0" role="button">
+                <div class="row g-0">
+                  <!-- Property Image -->
+                  <div class="col-12 col-lg-5">
+                    <div class="property-image-container position-relative">
+                      <img
+                        *ngIf="property.images && property.images.length > 0"
+                        [src]="property.images[0]"
+                        [alt]="property.title"
+                        loading="lazy"
+                        (error)="handleImageError($event)"
+                        class="property-main-image"
+                      />
+                      <div *ngIf="!property.images || property.images.length === 0" class="no-image-placeholder d-flex align-items-center justify-content-center">
+                        <span class="text-muted">No Image Available</span>
+                      </div>
+                      <div class="image-count-badge position-absolute top-0 start-0 m-3 bg-dark bg-opacity-75 text-white px-2 py-1 rounded">
+                        <i class="bi bi-images"></i> {{ property.images.length || 0 }}
+                      </div>
+                      <button class="favorite-btn position-absolute top-0 end-0 m-3 btn btn-light rounded-circle p-2" title="Add to favorites">
+                        ♡
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <!-- Property Details -->
+                  <div class="col-12 col-lg-7">
+                    <div class="property-content p-3">
+                      <!-- Title and Location -->
+                      <div class="mb-3">
+                        <h3 class="property-listing-title mb-2">{{ property.title }}</h3>
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                          <p class="property-subtitle text-muted mb-0">
+                            {{ property.bedrooms }} BHK for Sale in {{ property.location }}
+                          </p>
+                          <a href="#" class="text-decoration-none small" (click)="$event.preventDefault()">
+                            <span class="text-danger">📍</span> See on Map
+                          </a>
+                        </div>
+                      </div>
+                      
+                      <!-- Price -->
+                      <div class="property-price mb-3">
+                        <h2 class="mb-0 fw-bold">\${{ property.price | number }}</h2>
+                      </div>
+                      
+                      <!-- Features Grid -->
+                      <div class="property-features-grid row g-3 mb-3">
+                        <div class="col-6 col-md-4">
+                          <div class="feature-item d-flex align-items-center gap-2">
+                            <span class="feature-icon">🛏️</span>
+                            <span class="feature-text">{{ property.bedrooms }} BHK + {{ property.bathrooms }} Bath</span>
+                          </div>
+                        </div>
+                        <div class="col-6 col-md-4">
+                          <div class="feature-item d-flex align-items-center gap-2">
+                            <span class="feature-icon">📐</span>
+                            <span class="feature-text">{{ property.area | number }} Sq.Ft</span>
+                          </div>
+                        </div>
+                        <div class="col-6 col-md-4">
+                          <div class="feature-item d-flex align-items-center gap-2">
+                            <span class="feature-icon">🏢</span>
+                            <span class="feature-text">Ready To Move</span>
+                          </div>
+                        </div>
+                        <div class="col-6 col-md-4">
+                          <div class="feature-item d-flex align-items-center gap-2">
+                            <span class="feature-icon">🪑</span>
+                            <span class="feature-text">Semi-Furnished</span>
+                          </div>
+                        </div>
+                        <div class="col-6 col-md-4">
+                          <div class="feature-item d-flex align-items-center gap-2">
+                            <span class="feature-icon">🅿️</span>
+                            <span class="feature-text">Covered Parking</span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <!-- Description -->
+                      <div class="property-description mb-3">
+                        <p class="text-muted mb-0 small">
+                          {{ (property.description || '') | slice: 0: 180 }}{{ (property.description || '').length > 180 ? '...' : '' }}
+                          <a href="#" class="text-primary text-decoration-none" (click)="$event.preventDefault(); $event.stopPropagation(); openPropertyDetails(property.id)">Read More</a>
+                        </p>
+                      </div>
+                      
+                      <!-- Tags -->
+                      <div class="property-tags mb-3 d-flex flex-wrap gap-2">
+                        <span class="badge bg-light text-dark border">SAFE & SECURE</span>
+                        <span class="badge bg-light text-dark border">AFFORDABLE</span>
+                        <span class="badge bg-light text-dark border">SPACIOUS</span>
+                        <span class="badge bg-light text-dark border">WELL MAINTAINED</span>
+                      </div>
+                      
+                      <!-- Agent and Actions -->
+                      <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 pt-3 border-top">
+                        <div class="agent-info d-flex align-items-center gap-2">
+                          <div class="agent-avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                            {{ property.owner ? property.owner.charAt(0).toUpperCase() : 'A' }}
+                          </div>
+                          <div>
+                            <div class="fw-semibold">{{ property.owner || 'Property Agent' }}</div>
+                            <div class="small text-muted">
+                              <span class="badge badge-sm bg-warning text-dark">PRO AGENT</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="action-buttons d-flex gap-2">
+                          <button class="btn btn-outline-dark btn-sm" (click)="$event.stopPropagation()">
+                            📞 View Number
+                          </button>
+                          <button class="btn btn-warning btn-sm text-dark fw-semibold" (click)="$event.stopPropagation(); openPropertyDetails(property.id)">
+                            📧 Contact Agent
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="text-center mt-4" *ngIf="filteredProperties.length > displayLimit">
+            <button class="btn btn-outline-primary" (click)="loadMoreProperties()">Load More Properties</button>
           </div>
         </div>
       </div>
     </div>
   `,
-  styles: [`
-    .properties-wrapper {
-      display: flex;
-      gap: 2rem;
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 2rem;
-      min-height: 100vh;
-    }
-
-    /* SIDEBAR FILTERS */
-    .sidebar-filters {
-      flex: 0 0 280px;
-      background: white;
-      padding: 1.5rem;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      height: fit-content;
-      position: sticky;
-      top: 2rem;
-    }
-
-    .sidebar-filters h3 {
-      margin-top: 0;
-      margin-bottom: 1.5rem;
-      color: #333;
-      font-size: 1.2rem;
-      border-bottom: 2px solid #667eea;
-      padding-bottom: 0.75rem;
-    }
-
-    .filter-section {
-      margin-bottom: 1.5rem;
-    }
-
-    .filter-section label {
-      display: block;
-      font-weight: 600;
-      margin-bottom: 0.5rem;
-      color: #333;
-      font-size: 0.9rem;
-    }
-
-    .filter-section > label.small-label {
-      font-size: 0.85rem;
-      font-weight: 500;
-      margin-bottom: 0.25rem;
-    }
-
-    .search-input,
-    .number-input,
-    .select-input {
-      width: 100%;
-      padding: 0.65rem;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      font-size: 0.9rem;
-      transition: border-color 0.3s;
-    }
-
-    .search-input:focus,
-    .number-input:focus,
-    .select-input:focus {
-      outline: none;
-      border-color: #667eea;
-      box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
-    }
-
-    .price-inputs {
-      display: flex;
-      gap: 0.75rem;
-    }
-
-    .input-group {
-      flex: 1;
-    }
-
-    .input-group input {
-      width: 100%;
-    }
-
-    .price-display {
-      margin-top: 0.5rem;
-      font-size: 0.9rem;
-      color: #667eea;
-      font-weight: 600;
-    }
-
-    .checkbox-group {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-
-    .checkbox-label {
-      display: flex;
-      align-items: center;
-      font-weight: 400;
-      cursor: pointer;
-      font-size: 0.9rem;
-    }
-
-    .checkbox-label input {
-      margin-right: 0.5rem;
-      cursor: pointer;
-    }
-
-    .btn-reset {
-      width: 100%;
-      padding: 0.75rem;
-      background: #f5f5f5;
-      color: #333;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s;
-      margin-top: 1rem;
-    }
-
-    .btn-reset:hover {
-      background: #667eea;
-      color: white;
-      border-color: #667eea;
-    }
-
-    /* MAIN CONTENT */
-    .main-content {
-      flex: 1;
-      min-width: 0;
-    }
-
-    .results-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 2rem;
-      padding-bottom: 1rem;
-      border-bottom: 2px solid #eee;
-    }
-
-    .results-header h2 {
-      margin: 0;
-      color: #333;
-    }
-
-    .results-count {
-      color: #666;
-      font-size: 0.95rem;
-    }
-
-    .loading,
-    .no-results {
-      text-align: center;
-      padding: 3rem 2rem;
-      background: white;
-      border-radius: 8px;
-      color: #666;
-    }
-
-    .no-results p {
-      margin: 0 0 1rem 0;
-    }
-
-    /* PROPERTIES GRID */
-    .properties-grid {
-      display: flex;
-      flex-direction: column;
-      gap: 1.5rem;
-    }
-
-    .property-card {
-      display: flex;
-      gap: 1.5rem;
-      background: white;
-      border-radius: 8px;
-      overflow: hidden;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      transition: all 0.3s;
-    }
-
-    .property-card:hover {
-      transform: translateY(-6px);
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-    }
-
-    .property-image {
-      position: relative;
-      width: 350px;
-      height: 250px;
-      overflow: hidden;
-      background: #f0f0f0;
-      flex-shrink: 0;
-    }
-
-    .property-image img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      transition: transform 0.3s;
-    }
-
-    .property-card:hover .property-image img {
-      transform: scale(1.08);
-    }
-
-    .no-image {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 100%;
-      color: #999;
-      font-size: 0.9rem;
-    }
-
-    .price-badge {
-      position: absolute;
-      top: 1rem;
-      right: 1rem;
-      background: #667eea;
-      color: white;
-      padding: 0.5rem 1rem;
-      border-radius: 4px;
-      font-weight: bold;
-      font-size: 1rem;
-    }
-
-    .property-details {
-      padding: 1.5rem;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .property-details h3 {
-      margin: 0 0 0.5rem 0;
-      color: #333;
-      font-size: 1.1rem;
-    }
-
-    .location {
-      color: #666;
-      margin: 0.5rem 0;
-      font-size: 0.9rem;
-    }
-
-    .specs {
-      display: flex;
-      gap: 0.75rem;
-      margin: 1rem 0;
-      flex-wrap: wrap;
-    }
-
-    .spec {
-      color: #666;
-      font-size: 0.85rem;
-      background: #f5f5f5;
-      padding: 0.35rem 0.75rem;
-      border-radius: 4px;
-    }
-
-    .description {
-      color: #666;
-      font-size: 0.85rem;
-      margin: 1rem 0;
-      line-height: 1.4;
-    }
-
-    .btn-view {
-      display: block;
-      width: 100%;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      padding: 0.75rem;
-      border: none;
-      border-radius: 4px;
-      text-decoration: none;
-      text-align: center;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s;
-      margin-top: auto;
-    }
-
-    .btn-view:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-    }
-
-    /* RESPONSIVE */
-    @media (max-width: 1024px) {
-      .properties-wrapper {
-        flex-direction: column;
-      }
-
-      .sidebar-filters {
-        flex: 1;
-        position: static;
-      }
-
-      .property-card {
-        flex-direction: column;
-      }
-
-      .property-image {
-        width: 100%;
-        height: 220px;
-      }
-    }
-
-    @media (max-width: 768px) {
-      .properties-wrapper {
-        padding: 1rem;
-        gap: 1rem;
-      }
-
-      .sidebar-filters {
-        padding: 1rem;
-      }
-
-      .property-card {
-        flex-direction: column;
-      }
-
-      .property-image {
-        width: 100%;
-        height: 200px;
-      }
-
-      .results-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.5rem;
-      }
-    }
-  `]
+  styles: []
 })
 export class PropertiesComponent implements OnInit {
   allProperties: Property[] = [];
   filteredProperties: Property[] = [];
-  loading = true;
+  visibleProperties: Property[] = [];
+  loading = false;
+  loadError = '';
+  showFilters = false;
+  displayLimit = 12;
 
   searchQuery = '';
   minPrice = 0;
@@ -537,8 +345,10 @@ export class PropertiesComponent implements OnInit {
   sortBy = 'newest';
   selectedResidential = false;
   selectedCommercial = false;
+  selectedResale = false;
+  selectedUnderConstruction = false;
 
-  constructor(private propertyService: PropertyService) {}
+  constructor(private propertyService: PropertyService, private router: Router) {}
 
   ngOnInit() {
     this.loadProperties();
@@ -546,30 +356,41 @@ export class PropertiesComponent implements OnInit {
 
   loadProperties() {
     this.loading = true;
+    this.loadError = '';
     this.propertyService.getProperties().subscribe({
       next: (data) => {
-        this.allProperties = data;
-        this.filteredProperties = data;
+        this.allProperties = data || [];
+        this.filteredProperties = data || [];
+        this.updateVisibleProperties();
         this.loading = false;
       },
       error: (error) => {
-        console.error('Error loading properties:', error);
+        console.error('PropertiesComponent - Error loading properties:', error);
+        this.allProperties = [];
+        this.filteredProperties = [];
+        this.visibleProperties = [];
+        this.loadError = 'Unable to load properties right now. Please try again.';
         this.loading = false;
       },
     });
   }
 
   applyFilters() {
+    if (!this.allProperties || this.allProperties.length === 0) {
+      this.filteredProperties = [];
+      return;
+    }
+    
     let filtered = [...this.allProperties];
 
     // Search filter
-    if (this.searchQuery.trim()) {
-      const query = this.searchQuery.toLowerCase();
+    if (this.searchQuery && this.searchQuery.trim()) {
+      const query = this.searchQuery.toLowerCase().trim();
       filtered = filtered.filter(
         (p) =>
-          p.title.toLowerCase().includes(query) ||
-          p.location.toLowerCase().includes(query) ||
-          p.description.toLowerCase().includes(query)
+          (p.title && p.title.toLowerCase().includes(query)) ||
+          (p.location && p.location.toLowerCase().includes(query)) ||
+          (p.description && p.description.toLowerCase().includes(query))
       );
     }
 
@@ -633,6 +454,19 @@ export class PropertiesComponent implements OnInit {
       });
     }
 
+    // Possession status filter
+    if (this.selectedResale || this.selectedUnderConstruction) {
+      filtered = filtered.filter((p) => {
+        const poss = (p as any).possessionStatus || (p as any).possession || '';
+        const lower = (poss || '').toString().toLowerCase();
+        const isResale = lower.includes('resale') || lower.includes('ready') || lower.includes('ready to move') || lower.includes('ready-to-move');
+        const isUnder = lower.includes('under') || lower.includes('construction') || lower.includes('under construction');
+        if (this.selectedResale && isResale) return true;
+        if (this.selectedUnderConstruction && isUnder) return true;
+        return false;
+      });
+    }
+
     // Sort
     switch (this.sortBy) {
       case 'price-low':
@@ -650,6 +484,8 @@ export class PropertiesComponent implements OnInit {
     }
 
     this.filteredProperties = filtered;
+    this.displayLimit = 12;
+    this.updateVisibleProperties();
   }
 
   resetFilters() {
@@ -662,6 +498,52 @@ export class PropertiesComponent implements OnInit {
     this.sortBy = 'newest';
     this.selectedResidential = false;
     this.selectedCommercial = false;
+    this.selectedResale = false;
+    this.selectedUnderConstruction = false;
     this.filteredProperties = [...this.allProperties];
+    this.displayLimit = 12;
+    this.updateVisibleProperties();
+  }
+
+  updateVisibleProperties() {
+    this.visibleProperties = this.filteredProperties.slice(0, this.displayLimit);
+  }
+
+  loadMoreProperties() {
+    this.displayLimit += 12;
+    this.updateVisibleProperties();
+  }
+
+  toggleFilters() {
+    this.showFilters = !this.showFilters;
+  }
+
+  handleImageError(event: Event) {
+    const img = event.target as HTMLImageElement;
+    img.style.display = 'none';
+    const parent = img.parentElement;
+    if (parent && !parent.querySelector('.no-image')) {
+      const noImageDiv = document.createElement('div');
+      noImageDiv.className = 'no-image';
+      noImageDiv.textContent = 'Image unavailable';
+      parent.appendChild(noImageDiv);
+    }
+  }
+
+  openPropertyDetails(propertyId: string | undefined) {
+    if (propertyId) {
+      this.router.navigate(['/property', propertyId]);
+    }
+  }
+
+  onCardKeypress(event: KeyboardEvent, propertyId: string | undefined) {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      this.openPropertyDetails(propertyId);
+    }
+  }
+
+  trackByPropertyId(index: number, property: Property) {
+    return property.id || `${property.title}-${index}`;
   }
 }

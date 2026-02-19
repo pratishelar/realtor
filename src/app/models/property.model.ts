@@ -8,6 +8,8 @@ export interface Property {
   bathrooms: number;
   area: number;
   images: string[];
+  amenities?: string[];
+  possessionStatus?: string;
   features: string[];
   owner: string;
   createdAt?: Date;

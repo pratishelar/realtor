@@ -15,18 +15,69 @@ export class PropertyService {
 
   private normalizeProperty(id: string, data: any): Property {
     const safeData = data || {};
+    const priceDetails = safeData.priceDetails || {};
+    const status = safeData.status || {};
+    const unitConfig = safeData.unitConfig || {};
+    const size = safeData.size || {};
+    const reraDetails = safeData.reraDetails || {};
+    const normalizedAmenities = Array.isArray(safeData.amenities) ? safeData.amenities.filter(Boolean) : [];
+
+    const normalizedName = (safeData.name || safeData.title || '').toString();
+    const normalizedPrice = Number(safeData.price || priceDetails.totalPrice || priceDetails.basePrice || 0);
+    const normalizedArea = Number(safeData.area || size.totalArea || size.carpetArea || 0);
+
     return {
       id,
-      title: (safeData.title || '').toString(),
+      name: normalizedName,
+      title: (safeData.title || normalizedName).toString(),
       description: (safeData.description || '').toString(),
-      price: Number(safeData.price || 0),
+      price: normalizedPrice,
       location: (safeData.location || '').toString(),
+      city: (safeData.city || '').toString(),
+      numberOfUnits: Number(safeData.numberOfUnits || 0),
+      priceDetails: {
+        basePrice: Number(priceDetails.basePrice || safeData.price || 0),
+        governmentCharge: Number(priceDetails.governmentCharge || 0),
+        totalPrice: Number(priceDetails.totalPrice || safeData.price || 0),
+      },
+      status: {
+        preConstruction: !!status.preConstruction,
+        underConstruction: !!status.underConstruction,
+        readyToMove: !!status.readyToMove,
+      },
+      unitConfig: {
+        '1bhk': !!unitConfig['1bhk'],
+        '2bhk': !!unitConfig['2bhk'],
+        '3bhk': !!unitConfig['3bhk'],
+        '4bhk': !!unitConfig['4bhk'],
+        '5bhk': !!unitConfig['5bhk'],
+      },
+      size: {
+        carpetArea: Number(size.carpetArea || safeData.area || 0),
+        totalArea: Number(size.totalArea || safeData.area || 0),
+        label: (size.label || '').toString(),
+      },
+      priceList: Array.isArray(safeData.priceList)
+        ? safeData.priceList
+            .map((item: any) => ({
+              configuration: (item?.configuration || '').toString(),
+              area: Number(item?.area || 0),
+              price: Number(item?.price || 0),
+            }))
+            .filter((item: { configuration: string }) => item.configuration.length > 0)
+        : [],
+      floorPlans: Array.isArray(safeData.floorPlans) ? safeData.floorPlans.filter(Boolean) : [],
+      amenities: normalizedAmenities,
+      reraDetails: {
+        reraNumber: (reraDetails.reraNumber || '').toString(),
+        reraStatus: (reraDetails.reraStatus || '').toString(),
+        possession: (reraDetails.possession || '').toString(),
+      },
       bedrooms: Number(safeData.bedrooms || 0),
       bathrooms: Number(safeData.bathrooms || 0),
-      area: Number(safeData.area || 0),
+      area: normalizedArea,
       images: Array.isArray(safeData.images) ? safeData.images.filter(Boolean) : [],
-      amenities: Array.isArray(safeData.amenities) ? safeData.amenities.filter(Boolean) : [],
-      features: Array.isArray(safeData.features) ? safeData.features.filter(Boolean) : [],
+      features: Array.isArray(safeData.features) ? safeData.features.filter(Boolean) : normalizedAmenities,
       owner: (safeData.owner || '').toString(),
       phone: safeData.phone ? safeData.phone.toString() : undefined,
       email: safeData.email ? safeData.email.toString() : undefined,

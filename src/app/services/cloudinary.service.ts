@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, forkJoin } from 'rxjs';
 import { environment } from '../../environments/environment';
 
 @Injectable({
@@ -20,25 +20,8 @@ export class CloudinaryService {
   }
 
   uploadMultipleImages(files: File[]): Observable<any[]> {
-    const uploads: Observable<any>[] = files.map((file) =>
-      this.uploadImage(file)
-    );
-    return new Observable((observer) => {
-      Promise.all(uploads.map((upload) => upload.toPromise()))
-        .then((results) => {
-          console.log('CloudinaryService - All upload results:', results);
-          results.forEach((result, index) => {
-            console.log(`CloudinaryService - Result ${index}:`, result);
-            console.log(`CloudinaryService - Result ${index} secure_url:`, result?.secure_url);
-          });
-          observer.next(results);
-          observer.complete();
-        })
-        .catch((error) => {
-          console.error('CloudinaryService - Error:', error);
-          observer.error(error);
-        });
-    });
+    const uploads: Observable<any>[] = files.map((file) => this.uploadImage(file));
+    return forkJoin(uploads);
   }
 
   deleteImage(publicId: string): Observable<any> {

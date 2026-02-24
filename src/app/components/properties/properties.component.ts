@@ -22,8 +22,7 @@ import { Property } from '../../models/property.model';
       <div class="row g-4">
         <div class="col-12 col-lg-3" [class.d-none]="!showFilters" [class.d-lg-block]="true">
           <div class="sidebar-filters card p-4">
-            <h3 class="mb-4">Filter Properties</h3>
-            
+
             <!-- Category (moved to top) -->
             <div class="filter-section mb-4">
               <label class="form-label fw-bold">Category</label>
@@ -93,26 +92,30 @@ import { Property } from '../../models/property.model';
             <div class="filter-section mb-4">
               <label class="form-label fw-bold">Price Range</label>
               <div class="mb-3">
-                <label class="form-label small">Min Price</label>
+                <label class="form-label small">Min Price: ₹{{ minPrice | number }}</label>
                 <input
-                  type="number"
+                  type="range"
                   [(ngModel)]="minPrice"
-                  (change)="applyFilters()"
-                  class="form-control"
-                  placeholder="Min"
+                  (input)="onMinPriceChange()"
+                  class="form-range"
+                  [min]="priceFloor"
+                  [max]="priceCeiling"
+                  step="10000"
                 />
               </div>
               <div class="mb-3">
-                <label class="form-label small">Max Price</label>
+                <label class="form-label small">Max Price: ₹{{ maxPrice | number }}</label>
                 <input
-                  type="number"
+                  type="range"
                   [(ngModel)]="maxPrice"
-                  (change)="applyFilters()"
-                  class="form-control"
-                  placeholder="Max"
+                  (input)="onMaxPriceChange()"
+                  class="form-range"
+                  [min]="priceFloor"
+                  [max]="priceCeiling"
+                  step="10000"
                 />
               </div>
-              <div class="text-muted small">\${{ minPrice | number }} - \${{ maxPrice | number }}</div>
+              <div class="text-muted small">₹{{ minPrice | number }} - ₹{{ maxPrice | number }}</div>
             </div>
 
             <!-- Bedrooms -->
@@ -170,8 +173,7 @@ import { Property } from '../../models/property.model';
         </div>
 
         <div class="col-12 col-lg-9">
-          <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2 class="mb-0">Properties</h2>
+          <div class="d-flex justify-content-end align-items-center mb-4">
             <span class="badge bg-primary">{{ filteredProperties.length }} found</span>
           </div>
 
@@ -328,6 +330,7 @@ import { Property } from '../../models/property.model';
   styles: []
 })
 export class PropertiesComponent implements OnInit {
+  private readonly fallbackImage = 'https://images.unsplash.com/photo-1493666438817-866a91353ca9?w=1200&h=800&fit=crop&q=80';
   allProperties: Property[] = [];
   filteredProperties: Property[] = [];
   visibleProperties: Property[] = [];
@@ -337,6 +340,8 @@ export class PropertiesComponent implements OnInit {
   displayLimit = 12;
 
   searchQuery = '';
+  priceFloor = 0;
+  priceCeiling = 1000000;
   minPrice = 0;
   maxPrice = 1000000;
   selectedBedrooms: number | null = null;
@@ -359,8 +364,10 @@ export class PropertiesComponent implements OnInit {
     this.loadError = '';
     this.propertyService.getProperties().subscribe({
       next: (data) => {
-        this.allProperties = data || [];
-        this.filteredProperties = data || [];
+        const normalized = (data || []).map((property) => this.normalizeProperty(property));
+        this.updatePriceBounds(normalized);
+        this.allProperties = normalized;
+        this.filteredProperties = normalized;
         this.updateVisibleProperties();
         this.loading = false;
       },
@@ -491,7 +498,7 @@ export class PropertiesComponent implements OnInit {
   resetFilters() {
     this.searchQuery = '';
     this.minPrice = 0;
-    this.maxPrice = 1000000;
+    this.maxPrice = this.priceCeiling;
     this.selectedBedrooms = null;
     this.selectedBathrooms = null;
     this.minArea = 0;
@@ -518,16 +525,30 @@ export class PropertiesComponent implements OnInit {
     this.showFilters = !this.showFilters;
   }
 
+  onMinPriceChange() {
+    if (this.minPrice > this.maxPrice) {
+      this.maxPrice = this.minPrice;
+    }
+
+    this.applyFilters();
+  }
+
+  onMaxPriceChange() {
+    if (this.maxPrice < this.minPrice) {
+      this.minPrice = this.maxPrice;
+    }
+
+    this.applyFilters();
+  }
+
   handleImageError(event: Event) {
     const img = event.target as HTMLImageElement;
-    img.style.display = 'none';
-    const parent = img.parentElement;
-    if (parent && !parent.querySelector('.no-image')) {
-      const noImageDiv = document.createElement('div');
-      noImageDiv.className = 'no-image';
-      noImageDiv.textContent = 'Image unavailable';
-      parent.appendChild(noImageDiv);
+    if (img.src !== this.fallbackImage) {
+      img.src = this.fallbackImage;
+      return;
     }
+
+    img.style.display = 'none';
   }
 
   openPropertyDetails(propertyId: string | undefined) {
@@ -545,5 +566,30 @@ export class PropertiesComponent implements OnInit {
 
   trackByPropertyId(index: number, property: Property) {
     return property.id || `${property.title}-${index}`;
+  }
+
+  private normalizeProperty(property: Property): Property {
+    const safeImages = Array.isArray(property.images)
+      ? property.images.filter((image): image is string => typeof image === 'string' && image.trim().length > 0)
+      : [];
+
+    return {
+      ...property,
+      images: safeImages,
+    };
+  }
+
+  private updatePriceBounds(properties: Property[]) {
+    const prices = properties
+      .map((property) => Number(property.price) || 0)
+      .filter((price) => price > 0);
+
+    const maxSeen = prices.length > 0 ? Math.max(...prices) : 1000000;
+    const roundedCeiling = Math.ceil(maxSeen / 100000) * 100000;
+
+    this.priceFloor = 0;
+    this.priceCeiling = Math.max(roundedCeiling, 1000000);
+    this.minPrice = this.priceFloor;
+    this.maxPrice = this.priceCeiling;
   }
 }

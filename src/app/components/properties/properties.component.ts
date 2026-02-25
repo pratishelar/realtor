@@ -27,13 +27,43 @@ import { Property } from '../../models/property.model';
             <!-- Search Bar -->
             <div class="filter-section mb-4">
               <label class="form-label fw-bold">Search</label>
-              <input
-                type="text"
-                placeholder="Search by title, location..."
-                [(ngModel)]="searchQuery"
-                (keyup)="applyFilters()"
-                class="form-control"
-              />
+              <div class="search-autocomplete position-relative">
+                <input
+                  type="text"
+                  placeholder="Search by title, location..."
+                  [(ngModel)]="searchQuery"
+                  (input)="onSearchInput()"
+                  (focus)="onSearchFocus()"
+                  (blur)="onSearchBlur()"
+                  class="form-control"
+                />
+
+                <div class="search-suggestions list-group" *ngIf="showLocationSuggestions && locationSuggestions.length > 0">
+                  <button
+                    type="button"
+                    class="list-group-item list-group-item-action"
+                    *ngFor="let suggestion of locationSuggestions"
+                    (mousedown)="$event.preventDefault()"
+                    (click)="selectLocationSuggestion(suggestion)"
+                  >
+                    {{ suggestion }}
+                  </button>
+                </div>
+
+                <div class="selected-search-badge mt-2" *ngIf="selectedSearchLocation">
+                  <span class="badge text-bg-light border d-inline-flex align-items-center gap-2 py-2 px-3">
+                    {{ selectedSearchLocation }}
+                    <button
+                      type="button"
+                      class="badge-clear-btn"
+                      (click)="clearSelectedLocation($event)"
+                      aria-label="Clear selected location"
+                    >
+                      ×
+                    </button>
+                  </span>
+                </div>
+              </div>
             </div>
 
             <!-- Category (moved to top) -->
@@ -401,6 +431,34 @@ import { Property } from '../../models/property.model';
       line-height: 1.2;
     }
 
+    .search-suggestions {
+      position: absolute;
+      top: calc(100% + 0.25rem);
+      left: 0;
+      right: 0;
+      z-index: 12;
+      border: 1px solid #e0e0e0;
+      border-radius: 0.5rem;
+      max-height: 220px;
+      overflow-y: auto;
+      background: #fff;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+    }
+
+    .badge-clear-btn {
+      border: 0;
+      background: transparent;
+      color: #6c757d;
+      line-height: 1;
+      font-size: 1rem;
+      padding: 0;
+      cursor: pointer;
+    }
+
+    .badge-clear-btn:hover {
+      color: #212529;
+    }
+
     .toolbar-select {
       min-width: 148px;
       border-radius: 0.85rem;
@@ -437,6 +495,9 @@ export class PropertiesComponent implements OnInit {
   nextCursor: QueryDocumentSnapshot<DocumentData> | null = null;
 
   searchQuery = '';
+  selectedSearchLocation = '';
+  locationSuggestions: string[] = [];
+  showLocationSuggestions = false;
   priceFloor = 0;
   priceCeiling = 1000000;
   minPrice = 0;
@@ -513,8 +574,17 @@ export class PropertiesComponent implements OnInit {
     
     let filtered = [...this.allProperties];
 
+    if (this.selectedSearchLocation && this.selectedSearchLocation.trim()) {
+      const locationQuery = this.selectedSearchLocation.toLowerCase().trim();
+      filtered = filtered.filter(
+        (p) =>
+          (p.city && p.city.toLowerCase().includes(locationQuery)) ||
+          (p.location && p.location.toLowerCase().includes(locationQuery))
+      );
+    }
+
     // Search filter
-    if (this.searchQuery && this.searchQuery.trim()) {
+    if (!this.selectedSearchLocation && this.searchQuery && this.searchQuery.trim()) {
       const query = this.searchQuery.toLowerCase().trim();
       filtered = filtered.filter(
         (p) =>
@@ -656,6 +726,9 @@ export class PropertiesComponent implements OnInit {
 
   resetFilters() {
     this.searchQuery = '';
+    this.selectedSearchLocation = '';
+    this.locationSuggestions = [];
+    this.showLocationSuggestions = false;
     this.minPrice = 0;
     this.maxPrice = this.priceCeiling;
     this.selectedBedrooms = null;
@@ -772,6 +845,42 @@ export class PropertiesComponent implements OnInit {
 
   toggleFilters() {
     this.showFilters = !this.showFilters;
+  }
+
+  onSearchInput() {
+    if (this.selectedSearchLocation && this.searchQuery.trim().toLowerCase() !== this.selectedSearchLocation.toLowerCase()) {
+      this.selectedSearchLocation = '';
+    }
+
+    this.updateLocationSuggestions();
+    this.applyFilters();
+  }
+
+  onSearchFocus() {
+    this.updateLocationSuggestions();
+  }
+
+  onSearchBlur() {
+    setTimeout(() => {
+      this.showLocationSuggestions = false;
+    }, 120);
+  }
+
+  selectLocationSuggestion(suggestion: string) {
+    this.selectedSearchLocation = suggestion;
+    this.searchQuery = suggestion;
+    this.locationSuggestions = [];
+    this.showLocationSuggestions = false;
+    this.applyFilters();
+  }
+
+  clearSelectedLocation(event?: Event) {
+    event?.stopPropagation();
+    this.selectedSearchLocation = '';
+    this.searchQuery = '';
+    this.locationSuggestions = [];
+    this.showLocationSuggestions = false;
+    this.applyFilters();
   }
 
   onMinPriceChange() {
@@ -922,6 +1031,27 @@ export class PropertiesComponent implements OnInit {
 
   private containsWholeWord(text: string, word: string): boolean {
     return new RegExp(`\\b${word}\\b`, 'i').test(text || '');
+  }
+
+  private updateLocationSuggestions() {
+    const query = this.searchQuery.toLowerCase().trim();
+    if (!query || !!this.selectedSearchLocation) {
+      this.locationSuggestions = [];
+      this.showLocationSuggestions = false;
+      return;
+    }
+
+    const locationPool = this.allProperties.flatMap((property) => [property.city, property.location])
+      .map((value) => (value || '').trim())
+      .filter((value) => value.length > 0);
+
+    const uniqueLocations = Array.from(new Set(locationPool));
+    this.locationSuggestions = uniqueLocations
+      .filter((value) => value.toLowerCase().includes(query))
+      .sort((a, b) => a.localeCompare(b))
+      .slice(0, 8);
+
+    this.showLocationSuggestions = this.locationSuggestions.length > 0;
   }
 
   private normalizeProperty(property: Property): Property {

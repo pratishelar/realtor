@@ -142,32 +142,36 @@ import { Property } from '../../models/property.model';
                 <h1 class="h4 mb-1 fw-bold">{{ property.name || property.title }}</h1>
                 <div class="text-muted">{{ property.location }}{{ property.city ? ', ' + property.city : '' }}</div>
               </div>
-              <div class="p-3 p-md-4 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
-                <div class="fs-3 fw-bold">{{ getPriceRange(getDisplayPrice(property)) }} <span class="fs-5 text-muted fw-semibold">+ Charges</span></div>
-                <button class="btn btn-outline-warning fw-semibold">Price Insights</button>
+              <div class="p-3 p-md-4 border-bottom">
+                <div class="price-highlight d-flex align-items-center gap-2">
+                  <span class="price-tag-icon" aria-hidden="true">🏷️</span>
+                  <div class="price-highlight-text">
+                    <span class="price-highlight-range">₹{{ getBasePrice(property) | number }}</span>
+                    <button type="button" class="price-highlight-charges" (click)="openChargesPopup()">+ Charges</button>
+                  </div>
+                </div>
               </div>
               <div class="p-3 p-md-4 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <div>
                   <div class="text-muted">Project Status</div>
-                  <div class="fs-5 fw-bold">{{ getDisplayStatus(property) }}</div>
+                  <div class="fs-5 fw-bold">{{ getProjectStatus(property) }}</div>
                 </div>
-                <button class="btn btn-outline-warning fw-semibold">RERA Updates</button>
               </div>
               <div class="p-3 p-md-4">
-                <div class="row g-3">
-                  <div class="col-6 col-md-3">
+                <div class="unit-config-grid">
+                  <div class="unit-config-item">
                     <div class="text-muted small">Unit Config</div>
                     <div class="fw-bold">{{ getUnitConfigLabel(property) }}</div>
                   </div>
-                  <div class="col-6 col-md-3">
+                  <div class="unit-config-item">
                     <div class="text-muted small">Size</div>
                     <div class="fw-bold">{{ property.size.carpetArea | number:'1.0-0' }} to {{ property.size.totalArea | number:'1.0-0' }} Sq.Ft.</div>
                   </div>
-                  <div class="col-6 col-md-3">
+                  <div class="unit-config-item">
                     <div class="text-muted small">Number of Units</div>
                     <div class="fw-bold">{{ property.numberOfUnits || 0 }}</div>
                   </div>
-                  <div class="col-6 col-md-3">
+                  <div class="unit-config-item">
                     <div class="text-muted small">Total area</div>
                     <div class="fw-bold">{{ getTotalAreaInAcres(property) }} Acres</div>
                   </div>
@@ -253,6 +257,40 @@ import { Property } from '../../models/property.model';
 
           <div class="position-absolute bottom-0 mb-3 text-white small" *ngIf="galleryImages.length > 0">
             {{ currentGalleryIndex + 1 }} / {{ galleryImages.length }}
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="chargesPopupOpen" class="charges-modal-backdrop" (click)="closeChargesPopup()">
+        <div class="charges-modal-card" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Applicable Government Charges">
+          <div class="charges-modal-header">
+            <h3 class="mb-0">Applicable Government Charges</h3>
+            <button type="button" class="charges-modal-close" (click)="closeChargesPopup()" aria-label="Close">✕</button>
+          </div>
+
+          <div class="charges-modal-body">
+            <h4 class="charges-modal-title">Government Charges</h4>
+            <p class="charges-modal-subtitle mb-3">Standard across {{ property?.city || 'Pune' }}</p>
+
+            <div class="charges-box mb-3">
+              <div class="charges-box-head">Stamp Duty</div>
+              <div class="charges-box-body">
+                <ul class="charges-list mb-0">
+                  <li>Male Ownership: 6 %</li>
+                  <li>Female Ownership: 5 %</li>
+                  <li>Joint Ownership: 5.5 %</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="charges-box">
+              <div class="charges-box-head">Registration Charges</div>
+              <div class="charges-box-body">
+                <ul class="charges-list mb-0">
+                  <li>1% of the total value</li>
+                </ul>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -355,6 +393,155 @@ import { Property } from '../../models/property.model';
       color: #1f2a44;
     }
 
+    .price-highlight {
+      min-width: 0;
+    }
+
+    .price-tag-icon {
+      font-size: 1.6rem;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+
+    .price-highlight-text {
+      min-width: 0;
+      line-height: 1.2;
+      color: #2a2a2a;
+    }
+
+    .price-highlight-range {
+      font-size: 1.4rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+    }
+
+    .price-highlight-charges {
+      font-size: 0.85rem;
+      color: #666;
+      margin-left: 0.25rem;
+      font-weight: 600;
+      border: none;
+      background: transparent;
+      text-decoration: underline;
+      padding: 0;
+      cursor: pointer;
+    }
+
+    .charges-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.55);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      z-index: 2100;
+    }
+
+    .charges-modal-card {
+      width: min(100%, 720px);
+      max-height: 92vh;
+      overflow: auto;
+      background: #fff;
+      border-radius: 1rem;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+    }
+
+    .charges-modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid #ececec;
+    }
+
+    .charges-modal-header h3 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #333;
+      line-height: 1.1;
+    }
+
+    .charges-modal-close {
+      border: none;
+      background: transparent;
+      font-size: 2.2rem;
+      line-height: 1;
+      color: #444;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .charges-modal-body {
+      padding: 1.5rem;
+      background: #f6f6f6;
+    }
+
+    .charges-modal-title {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #333;
+      margin: 0 0 0.25rem;
+    }
+
+    .charges-modal-subtitle {
+      font-size: 1.15rem;
+      color: #666;
+    }
+
+    .charges-box {
+      border: 1px solid #d6d6d6;
+      border-radius: 1rem;
+      background: #f2f2f2;
+      overflow: hidden;
+    }
+
+    .charges-box-head {
+      padding: 1rem 1.25rem;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #333;
+      background: #ebebeb;
+      border-bottom: 1px solid #d6d6d6;
+    }
+
+    .charges-box-body {
+      padding: 1rem 1.25rem;
+      background: #f8f8f8;
+    }
+
+    .charges-list {
+      padding-left: 1.25rem;
+      margin: 0;
+      color: #555;
+      font-size: 1.05rem;
+      line-height: 1.8;
+    }
+
+    .unit-config-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      border: 1px solid #dedede;
+      border-radius: 0.5rem;
+      overflow: hidden;
+    }
+
+    .unit-config-item {
+      padding: 0.75rem;
+      border-right: 1px solid #dedede;
+      border-bottom: 1px solid #dedede;
+      min-width: 0;
+    }
+
+    .unit-config-item:nth-child(2n) {
+      border-right: none;
+    }
+
+    .unit-config-item:nth-last-child(-n+2) {
+      border-bottom: none;
+    }
+
     @media (min-width: 992px) {
       .top-price-card {
         min-height: 452px;
@@ -374,6 +561,41 @@ import { Property } from '../../models/property.model';
       .thumb-btn {
         height: 110px;
       }
+
+      .price-highlight-range {
+        font-size: 1.1rem;
+      }
+
+      .price-highlight-charges {
+        font-size: 0.78rem;
+      }
+
+      .charges-modal-header h3,
+      .charges-modal-title {
+        font-size: 1.45rem;
+      }
+
+      .charges-modal-subtitle,
+      .charges-box-head,
+      .charges-list {
+        font-size: 1rem;
+      }
+
+      .unit-config-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .unit-config-item {
+        border-right: none;
+      }
+
+      .unit-config-item:nth-last-child(-n+2) {
+        border-bottom: 1px solid #dedede;
+      }
+
+      .unit-config-item:last-child {
+        border-bottom: none;
+      }
     }
   `]
 })
@@ -385,6 +607,7 @@ export class PropertyDetailComponent implements OnInit {
   galleryOpen = false;
   galleryImages: string[] = [];
   currentGalleryIndex = 0;
+  chargesPopupOpen = false;
   loading = true;
   expertForm = {
     name: '',
@@ -490,6 +713,14 @@ export class PropertyDetailComponent implements OnInit {
       this.currentGalleryIndex === this.galleryImages.length - 1 ? 0 : this.currentGalleryIndex + 1;
   }
 
+  openChargesPopup() {
+    this.chargesPopupOpen = true;
+  }
+
+  closeChargesPopup() {
+    this.chargesPopupOpen = false;
+  }
+
   submitExpertForm(property: Property) {
     const name = (this.expertForm.name || '').trim();
     const email = (this.expertForm.email || '').trim();
@@ -569,17 +800,38 @@ export class PropertyDetailComponent implements OnInit {
   }
 
   getAmenityIcon(amenity: string): string {
-    const value = (amenity || '').toLowerCase();
+    const value = (amenity || '').toLowerCase().trim();
 
-    if (value.includes('gym') || value.includes('fitness')) return '🏋️';
-    if (value.includes('pool') || value.includes('swim')) return '🏊';
-    if (value.includes('club')) return '🏛️';
-    if (value.includes('kids') || value.includes('play')) return '🛝';
-    if (value.includes('garden') || value.includes('landscape') || value.includes('park')) return '🌳';
-    if (value.includes('power') || value.includes('backup') || value.includes('electric')) return '⚡';
+    if (value.includes('clubhouse')) return '🏛️';
+    if (value.includes('gymnasium') || value.includes('gym') || value.includes('fitness')) return '🏋️';
+    if (value.includes('swimming pool') || value.includes('pool')) return '🏊';
+    if (value.includes('kids play area') || value.includes('play area') || value.includes('kids')) return '🛝';
+    if (value.includes('badminton')) return '🏸';
+    if (value.includes('football')) return '⚽';
+    if (value.includes('cricket')) return '🏏';
+    if (value.includes('basketball')) return '🏀';
+    if (value.includes('volleyball')) return '🏐';
+    if (value.includes('yoga')) return '🧘';
+    if (value.includes('jogging')) return '🏃';
+    if (value.includes('table tennis')) return '🏓';
+    if (value.includes('snooker') || value.includes('billiards')) return '🎱';
+    if (value.includes('cycle') || value.includes('cycling')) return '🚴';
+
+    if (value.includes('landscaped garden') || value.includes('garden')) return '🌳';
+    if (value.includes('power backup') || value.includes('power') || value.includes('backup')) return '⚡';
+    if (value.includes('lift') || value.includes('elevator')) return '🛗';
+    if (value.includes('treated water') || value.includes('water')) return '💧';
+    if (value.includes('pet area') || value.includes('pet')) return '🐾';
+
+    if (value.includes('library')) return '📚';
+    if (value.includes('party hall')) return '🎉';
+    if (value.includes('café') || value.includes('cafe')) return '☕';
+    if (value.includes('indoor games')) return '🎮';
+    if (value.includes('spa')) return '🧖';
+    if (value.includes('senior citizen')) return '👴';
+
     if (value.includes('security') || value.includes('cctv')) return '🛡️';
     if (value.includes('parking')) return '🅿️';
-    if (value.includes('lift') || value.includes('elevator')) return '🛗';
 
     return '✅';
   }
@@ -683,6 +935,23 @@ export class PropertyDetailComponent implements OnInit {
     return Number(property.priceDetails.totalPrice || property.price || property.priceDetails.basePrice || 0);
   }
 
+  getBasePrice(property: Property): number {
+    return Number(property.priceDetails.basePrice || property.price || 0);
+  }
+
+  getGovernmentCharge(property: Property): number {
+    return Number(property.priceDetails.governmentCharge || 0);
+  }
+
+  getTotalPrice(property: Property): number {
+    const total = Number(property.priceDetails.totalPrice || 0);
+    if (total > 0) {
+      return total;
+    }
+
+    return this.getBasePrice(property) + this.getGovernmentCharge(property);
+  }
+
   getDisplayArea(property: Property): number {
     return Number(property.size.totalArea || property.area || property.size.carpetArea || 0);
   }
@@ -705,6 +974,43 @@ export class PropertyDetailComponent implements OnInit {
     }
 
     return property.possessionStatus || 'N/A';
+  }
+
+  getProjectStatus(property: Property): string {
+    if (property.status.resale) {
+      return 'Resale';
+    }
+
+    if (property.status.readyToMove) {
+      return 'Ready to Move';
+    }
+
+    if (property.status.underConstruction) {
+      return 'Under Construction';
+    }
+
+    if (property.status.preConstruction) {
+      return 'Pre Construction';
+    }
+
+    const fallback = `${property.possessionStatus || ''} ${property.reraDetails.possession || ''}`.toLowerCase();
+    if (fallback.includes('resale') || fallback.includes('re-sale')) {
+      return 'Resale';
+    }
+
+    if (fallback.includes('ready')) {
+      return 'Ready to Move';
+    }
+
+    if (fallback.includes('under') || fallback.includes('construction')) {
+      return 'Under Construction';
+    }
+
+    if (fallback.includes('pre')) {
+      return 'Pre Construction';
+    }
+
+    return 'N/A';
   }
 
   getUnitConfigLabel(property: Property): string {

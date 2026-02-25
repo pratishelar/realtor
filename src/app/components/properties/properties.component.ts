@@ -189,25 +189,25 @@ import { Property } from '../../models/property.model';
               />
             </div>
 
-            <!-- Sort Options -->
-            <div class="filter-section mb-4">
-              <label class="form-label fw-bold">Sort By</label>
-              <select [(ngModel)]="sortBy" (change)="applyFilters()" class="form-select">
-                <option value="newest">Newest First</option>
-                <option value="price-low">Price: Low to High</option>
-                <option value="price-high">Price: High to Low</option>
-                <option value="size">Size: Large to Small</option>
-              </select>
-            </div>
-
             <!-- Reset Filters -->
             <button (click)="resetFilters()" class="btn btn-outline-secondary w-100">Reset All Filters</button>
           </div>
         </div>
 
         <div class="col-12 col-lg-9">
-          <div class="d-flex justify-content-end align-items-center mb-4">
-            <span class="badge bg-primary">{{ filteredProperties.length }} found</span>
+          <div class="listings-toolbar d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+            <div>
+              <h2 class="listings-count mb-1">Showing {{ filteredProperties.length | number }} Listings</h2>
+            </div>
+
+            <div class="d-flex flex-wrap align-items-center gap-2 gap-md-3">
+              <select [(ngModel)]="sortBy" (change)="applyFilters()" class="toolbar-select form-select">
+                <option value="newest">Sort By</option>
+                <option value="price-low">Price: Low to High</option>
+                <option value="price-high">Price: High to Low</option>
+                <option value="size">Size: Large to Small</option>
+              </select>
+            </div>
           </div>
 
           <div *ngIf="loading" class="text-center py-5">
@@ -327,26 +327,27 @@ import { Property } from '../../models/property.model';
             </div>
           </div>
 
-          <div class="d-flex justify-content-center align-items-center gap-2 mt-4" *ngIf="!loading && !loadError && filteredProperties.length > 0">
-            <button class="btn btn-outline-primary btn-sm" (click)="previousPage()" [disabled]="currentPage === 1 || loadingMore">Previous</button>
-
-            <button
-              type="button"
-              class="btn btn-sm"
-              *ngFor="let page of getPaginationPages()"
-              [class.btn-primary]="page === currentPage"
-              [class.btn-outline-primary]="page !== currentPage"
-              (click)="goToPage(page)"
-              [disabled]="loadingMore"
-            >
-              {{ page }}
-            </button>
-
-            <button class="btn btn-outline-primary btn-sm" (click)="nextPage()" [disabled]="loadingMore || (!hasMoreProperties && currentPage >= totalPages)">
-              Next
-            </button>
-          </div>
         </div>
+      </div>
+
+      <div class="d-flex justify-content-center align-items-center gap-2 mt-4" *ngIf="!loading && !loadError && filteredProperties.length > 0">
+        <button class="btn btn-outline-primary btn-sm" (click)="previousPage()" [disabled]="currentPage === 1 || loadingMore">Previous</button>
+
+        <button
+          type="button"
+          class="btn btn-sm"
+          *ngFor="let page of getPaginationPages()"
+          [class.btn-primary]="page === currentPage"
+          [class.btn-outline-primary]="page !== currentPage"
+          (click)="goToPage(page)"
+          [disabled]="loadingMore"
+        >
+          {{ page }}
+        </button>
+
+        <button class="btn btn-outline-primary btn-sm" (click)="nextPage()" [disabled]="loadingMore || (!hasMoreProperties && currentPage >= totalPages)">
+          Next
+        </button>
       </div>
     </div>
   `,
@@ -391,6 +392,33 @@ import { Property } from '../../models/property.model';
 
     .property-type-chip.active .chip-check {
       color: #2c74c9;
+    }
+
+    .listings-count {
+      font-size: 1.55rem;
+      font-weight: 700;
+      color: #2f3237;
+      line-height: 1.2;
+    }
+
+    .toolbar-select {
+      min-width: 148px;
+      border-radius: 0.85rem;
+      border-color: #d0d3d8;
+      background-color: #f4f4f4;
+      color: #343a40;
+      font-weight: 500;
+      font-size: 0.92rem;
+      padding-top: 0.52rem;
+      padding-bottom: 0.52rem;
+      padding-left: 0.85rem;
+      padding-right: 2rem;
+    }
+
+    @media (max-width: 767.98px) {
+      .toolbar-select {
+        width: 100%;
+      }
     }
   `]
 })

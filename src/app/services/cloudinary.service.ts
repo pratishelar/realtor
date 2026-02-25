@@ -8,6 +8,7 @@ import { environment } from '../../environments/environment';
 })
 export class CloudinaryService {
   private cloudinaryUrl = `https://api.cloudinary.com/v1_1/${environment.cloudinary.cloudName}/image/upload`;
+  private cloudinaryAutoUploadUrl = `https://api.cloudinary.com/v1_1/${environment.cloudinary.cloudName}/auto/upload`;
 
   constructor(private http: HttpClient) {}
 
@@ -21,6 +22,19 @@ export class CloudinaryService {
 
   uploadMultipleImages(files: File[]): Observable<any[]> {
     const uploads: Observable<any>[] = files.map((file) => this.uploadImage(file));
+    return forkJoin(uploads);
+  }
+
+  uploadFile(file: File): Observable<any> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', environment.cloudinary.uploadPreset);
+
+    return this.http.post(this.cloudinaryAutoUploadUrl, formData);
+  }
+
+  uploadMultipleFiles(files: File[]): Observable<any[]> {
+    const uploads: Observable<any>[] = files.map((file) => this.uploadFile(file));
     return forkJoin(uploads);
   }
 

@@ -5,9 +5,10 @@ export interface PropertyPriceDetails {
 }
 
 export interface PropertyStatus {
-  preConstruction: boolean;
   underConstruction: boolean;
   readyToMove: boolean;
+  resale: boolean;
+  preConstruction?: boolean;
 }
 
 export interface PropertyUnitConfig {
@@ -20,8 +21,24 @@ export interface PropertyUnitConfig {
 
 export interface PropertySize {
   carpetArea: number;
+  builtArea: number;
   totalArea: number;
-  label: string;
+  label?: string;
+}
+
+export interface PropertyAmenitiesByCategory {
+  sports: string[];
+  convenience: string[];
+  leisure: string[];
+}
+
+export interface PropertyType {
+  apartment: boolean;
+  villa: boolean;
+  house: boolean;
+  plot: boolean;
+  office: boolean;
+  shop: boolean;
 }
 
 export interface PropertyPriceListItem {
@@ -53,8 +70,12 @@ export interface Property {
   priceList: PropertyPriceListItem[];
   floorPlans: string[];
   amenities: string[];
+  amenitiesByCategory: PropertyAmenitiesByCategory;
   reraDetails: PropertyReraDetails;
   images: string[];
+  mainImage?: string;
+  category: 'residential' | 'commercial' | '';
+  propertyType: PropertyType;
 
   price: number;
   bedrooms: number;

@@ -34,112 +34,89 @@ import { AdminSidebarComponent } from '../admin-sidebar/admin-sidebar.component'
           <div *ngIf="activeTab === 'add'" class="tab-content card p-4">
             <form (ngSubmit)="saveProperty()" class="property-form">
               <div class="form-section">
-                <h3>Basic Information</h3>
+                <h3>Property Details</h3>
+
                 <div class="form-group">
                   <label>Name</label>
-                  <input
-                    type="text"
-                    [(ngModel)]="formData.name"
-                    name="name"
-                    required
-                    placeholder="Enter property name"
-                    class="form-control"
-                  />
+                  <input type="text" [(ngModel)]="formData.name" name="name" required class="form-control" />
                 </div>
 
                 <div class="form-row">
                   <div class="form-group">
                     <label>Location</label>
-                    <input
-                      type="text"
-                      [(ngModel)]="formData.location"
-                      name="location"
-                      required
-                      placeholder="Enter location"
-                      class="form-control"
-                    />
+                    <input type="text" [(ngModel)]="formData.location" name="location" required class="form-control" />
                   </div>
                   <div class="form-group">
                     <label>City</label>
-                    <input
-                      type="text"
-                      [(ngModel)]="formData.city"
-                      name="city"
-                      required
-                      placeholder="Enter city"
-                      class="form-control"
-                    />
+                    <input type="text" [(ngModel)]="formData.city" name="city" required class="form-control" />
                   </div>
                 </div>
 
                 <div class="form-group">
                   <label>Description</label>
-                  <textarea
-                    [(ngModel)]="formData.description"
-                    name="description"
-                    required
-                    rows="4"
-                    placeholder="Describe the property in detail"
-                    class="form-control"
-                  ></textarea>
+                  <textarea [(ngModel)]="formData.description" name="description" required rows="4" class="form-control"></textarea>
+                </div>
+
+                <div class="form-group">
+                  <label>Category</label>
+                  <div class="d-flex gap-3 flex-wrap">
+                    <label><input type="radio" [(ngModel)]="formData.category" name="category" value="residential" /> Residential</label>
+                    <label><input type="radio" [(ngModel)]="formData.category" name="category" value="commercial" /> Commercial</label>
+                  </div>
+                </div>
+
+                <div class="form-group" *ngIf="formData.category === 'residential'">
+                  <label>Property Type for Residential</label>
+                  <div class="d-flex gap-3 flex-wrap">
+                    <label><input type="checkbox" [(ngModel)]="formData.propertyType.apartment" name="ptypeApartment" /> Apartment</label>
+                    <label><input type="checkbox" [(ngModel)]="formData.propertyType.villa" name="ptypeVilla" /> Villa</label>
+                    <label><input type="checkbox" [(ngModel)]="formData.propertyType.house" name="ptypeHouse" /> House</label>
+                  </div>
+                </div>
+
+                <div class="form-group" *ngIf="formData.category === 'commercial'">
+                  <label>Property Type for Commercial</label>
+                  <div class="d-flex gap-3 flex-wrap">
+                    <label><input type="checkbox" [(ngModel)]="formData.propertyType.plot" name="ptypePlot" /> Plot</label>
+                    <label><input type="checkbox" [(ngModel)]="formData.propertyType.office" name="ptypeOffice" /> Office</label>
+                    <label><input type="checkbox" [(ngModel)]="formData.propertyType.shop" name="ptypeShop" /> Shop</label>
+                  </div>
                 </div>
               </div>
 
               <div class="form-section">
-                <h3>Property Details</h3>
+                <h3>Price & Status</h3>
+
                 <div class="form-row">
                   <div class="form-group">
                     <label>Base Price</label>
-                    <input
-                      type="number"
-                      [(ngModel)]="formData.priceDetails.basePrice"
-                      name="basePrice"
-                      required
-                      min="0"
-                      class="form-control"
-                    />
+                    <input type="number" [(ngModel)]="formData.priceDetails.basePrice" name="basePrice" min="0" required class="form-control" />
                   </div>
                   <div class="form-group">
                     <label>Government Charge</label>
-                    <input
-                      type="number"
-                      [(ngModel)]="formData.priceDetails.governmentCharge"
-                      name="governmentCharge"
-                      required
-                      min="0"
-                      class="form-control"
-                    />
+                    <input type="number" [(ngModel)]="formData.priceDetails.governmentCharge" name="governmentCharge" min="0" required class="form-control" />
                   </div>
                   <div class="form-group">
                     <label>Total Price</label>
-                    <input
-                      type="number"
-                      [(ngModel)]="formData.priceDetails.totalPrice"
-                      name="totalPrice"
-                      required
-                      min="0"
-                      class="form-control"
-                    />
+                    <input type="number" [(ngModel)]="formData.priceDetails.totalPrice" name="totalPrice" min="0" required class="form-control" />
                   </div>
                 </div>
 
                 <div class="form-group">
                   <label>Status</label>
                   <div class="d-flex gap-3 flex-wrap">
-                    <label>
-                      <input type="checkbox" [(ngModel)]="formData.status.preConstruction" name="statusPreConstruction" /> Pre Construction
-                    </label>
-                    <label>
-                      <input type="checkbox" [(ngModel)]="formData.status.underConstruction" name="statusUnderConstruction" /> Under Construction
-                    </label>
-                    <label>
-                      <input type="checkbox" [(ngModel)]="formData.status.readyToMove" name="statusReadyToMove" /> Ready to Move
-                    </label>
+                    <label><input type="checkbox" [(ngModel)]="formData.status.underConstruction" name="statusUnderConstruction" /> Under Construction</label>
+                    <label><input type="checkbox" [(ngModel)]="formData.status.readyToMove" name="statusReadyToMove" /> Ready to Move</label>
+                    <label><input type="checkbox" [(ngModel)]="formData.status.resale" name="statusResale" /> Resale</label>
                   </div>
                 </div>
+              </div>
+
+              <div class="form-section">
+                <h3>Unit & Size</h3>
 
                 <div class="form-group">
-                  <label>Unit Configuration</label>
+                  <label>Unit Config</label>
                   <div class="d-flex gap-3 flex-wrap">
                     <label><input type="checkbox" [(ngModel)]="formData.unitConfig['1bhk']" name="unit1bhk" /> 1 BHK</label>
                     <label><input type="checkbox" [(ngModel)]="formData.unitConfig['2bhk']" name="unit2bhk" /> 2 BHK</label>
@@ -152,50 +129,15 @@ import { AdminSidebarComponent } from '../admin-sidebar/admin-sidebar.component'
                 <div class="form-row">
                   <div class="form-group">
                     <label>Carpet Area</label>
-                    <input
-                      type="number"
-                      [(ngModel)]="formData.size.carpetArea"
-                      name="carpetArea"
-                      required
-                      min="0"
-                      class="form-control"
-                    />
+                    <input type="number" [(ngModel)]="formData.size.carpetArea" name="carpetArea" min="0" required class="form-control" />
                   </div>
                   <div class="form-group">
-                    <label>Total Area</label>
-                    <input
-                      type="number"
-                      [(ngModel)]="formData.size.totalArea"
-                      name="totalArea"
-                      required
-                      min="0"
-                      class="form-control"
-                    />
+                    <label>Built Area</label>
+                    <input type="number" [(ngModel)]="formData.size.builtArea" name="builtArea" min="0" required class="form-control" />
                   </div>
-                  <div class="form-group">
-                    <label>Size Label</label>
-                    <input
-                      type="text"
-                      [(ngModel)]="formData.size.label"
-                      name="sizeLabel"
-                      required
-                      placeholder="e.g., Compact / Premium"
-                      class="form-control"
-                    />
-                  </div>
-                </div>
-
-                <div class="form-row">
                   <div class="form-group">
                     <label>Number of Units</label>
-                    <input
-                      type="number"
-                      [(ngModel)]="formData.numberOfUnits"
-                      name="numberOfUnits"
-                      required
-                      min="0"
-                      class="form-control"
-                    />
+                    <input type="number" [(ngModel)]="formData.numberOfUnits" name="numberOfUnits" min="0" required class="form-control" />
                   </div>
                 </div>
               </div>
@@ -205,7 +147,7 @@ import { AdminSidebarComponent } from '../admin-sidebar/admin-sidebar.component'
                 <div *ngFor="let row of formData.priceList; let i = index" class="form-row align-items-end">
                   <div class="form-group">
                     <label>Configuration</label>
-                    <input type="text" [(ngModel)]="row.configuration" [name]="'priceListConfig' + i" class="form-control" />
+                    <input type="text" [(ngModel)]="row.configuration" [name]="'priceListConfiguration' + i" class="form-control" />
                   </div>
                   <div class="form-group">
                     <label>Area</label>
@@ -225,28 +167,48 @@ import { AdminSidebarComponent } from '../admin-sidebar/admin-sidebar.component'
               <div class="form-section">
                 <h3>Floor Plan</h3>
                 <div class="form-group">
-                  <label>Floor Plan Image URLs (comma-separated)</label>
-                  <textarea
-                    [(ngModel)]="floorPlanInput"
-                    name="floorPlans"
-                    rows="3"
-                    placeholder="https://.../floor1.jpg, https://.../floor2.jpg"
-                    class="form-control"
-                  ></textarea>
+                  <label>Upload Floor Plan (PDF or Image)</label>
+                  <input type="file" multiple accept="image/*,.pdf,application/pdf" (change)="onFloorPlanSelected($event)" class="file-input form-control" />
+                  <div class="image-preview mt-2">
+                    <div *ngFor="let plan of formData.floorPlans" class="uploaded-item">
+                      <a [href]="plan" target="_blank" rel="noopener" class="small text-truncate" style="max-width: 250px;">{{ plan }}</a>
+                      <button type="button" class="remove-btn" (click)="removeFloorPlan(plan)">Remove</button>
+                    </div>
+                  </div>
                 </div>
               </div>
 
               <div class="form-section">
                 <h3>Amenities</h3>
-                <div class="d-flex gap-3 flex-wrap">
-                  <label *ngFor="let amenity of amenityOptions">
-                    <input
-                      type="checkbox"
-                      [checked]="isAmenitySelected(amenity)"
-                      (change)="toggleAmenity(amenity, $event)"
-                    />
-                    {{ amenity }}
-                  </label>
+
+                <div class="mb-3">
+                  <strong class="d-block mb-2">Sports</strong>
+                  <div class="d-flex gap-3 flex-wrap">
+                    <label *ngFor="let amenity of sportsAmenityOptions">
+                      <input type="checkbox" [checked]="isAmenitySelected('sports', amenity)" (change)="toggleAmenity('sports', amenity, $event)" />
+                      {{ amenity }}
+                    </label>
+                  </div>
+                </div>
+
+                <div class="mb-3">
+                  <strong class="d-block mb-2">Convenience</strong>
+                  <div class="d-flex gap-3 flex-wrap">
+                    <label *ngFor="let amenity of convenienceAmenityOptions">
+                      <input type="checkbox" [checked]="isAmenitySelected('convenience', amenity)" (change)="toggleAmenity('convenience', amenity, $event)" />
+                      {{ amenity }}
+                    </label>
+                  </div>
+                </div>
+
+                <div>
+                  <strong class="d-block mb-2">Leisure</strong>
+                  <div class="d-flex gap-3 flex-wrap">
+                    <label *ngFor="let amenity of leisureAmenityOptions">
+                      <input type="checkbox" [checked]="isAmenitySelected('leisure', amenity)" (change)="toggleAmenity('leisure', amenity, $event)" />
+                      {{ amenity }}
+                    </label>
+                  </div>
                 </div>
               </div>
 
@@ -272,21 +234,18 @@ import { AdminSidebarComponent } from '../admin-sidebar/admin-sidebar.component'
                 <h3>Photos</h3>
                 <div class="form-group">
                   <label>Upload Images</label>
-                  <input
-                    type="file"
-                    #fileInput
-                    multiple
-                    accept="image/*"
-                    (change)="onFileSelected($event)"
-                    class="file-input form-control"
-                  />
+                  <input type="file" multiple accept="image/*" (change)="onFileSelected($event)" class="file-input form-control" />
                   <p class="file-hint">You can upload multiple images at once</p>
                   <div class="image-preview">
                     <div *ngFor="let img of formData.images" class="uploaded-item">
                       <img [src]="img" alt="Uploaded image" class="preview-img" />
+                      <div class="d-flex gap-2 mt-1">
+                        <button type="button" class="btn btn-sm" [class.btn-primary]="formData.mainImage === img" [class.btn-outline-primary]="formData.mainImage !== img" (click)="setMainImage(img)">
+                          {{ formData.mainImage === img ? 'Main Image' : 'Set as Main' }}
+                        </button>
+                      </div>
                       <button type="button" class="remove-btn" (click)="removeUploadedImage(img)">Remove</button>
                     </div>
-
                     <div *ngFor="let p of selectedPreviews" class="selected-item">
                       <img [src]="p" alt="Selected preview" class="preview-img" />
                       <div class="preview-label">Selected</div>
@@ -295,27 +254,16 @@ import { AdminSidebarComponent } from '../admin-sidebar/admin-sidebar.component'
                 </div>
 
                 <div *ngIf="uploadProgress > 0 && uploadProgress < 100" class="progress-bar">
-                  <div [style.width.%]="uploadProgress" class="progress-fill">
-                    {{ uploadProgress }}%
-                  </div>
+                  <div [style.width.%]="uploadProgress" class="progress-fill">{{ uploadProgress }}%</div>
                 </div>
               </div>
 
               <div class="form-actions">
-                <button
-                  type="submit"
-                  class="btn-submit btn btn-success"
-                  [disabled]="saving || uploadingImages"
-                >
-                  {{ saving ? 'Saving...' : uploadingImages ? 'Uploading images...' : editingId ? 'Update Property' : 'Add Property' }}
+                <button type="submit" class="btn-submit btn btn-success" [disabled]="saving || uploadingImages">
+                  {{ saving ? 'Saving...' : uploadingImages ? 'Uploading files...' : editingId ? 'Update Property' : 'Add Property' }}
                 </button>
 
-                <button
-                  *ngIf="editingId"
-                  type="button"
-                  (click)="cancelEdit()"
-                  class="btn-cancel btn btn-outline-secondary"
-                >
+                <button *ngIf="editingId" type="button" (click)="cancelEdit()" class="btn-cancel btn btn-outline-secondary">
                   Cancel
                 </button>
               </div>
@@ -327,12 +275,14 @@ import { AdminSidebarComponent } from '../admin-sidebar/admin-sidebar.component'
               <div class="spinner"></div>
               Loading properties...
             </div>
+
             <div *ngIf="!loadingProperties && myProperties.length === 0" class="no-properties">
               <div class="empty-state-icon">📭</div>
               <h3>No properties yet</h3>
               <p>Add your first property to get started</p>
               <button (click)="activeTab = 'add'" class="btn-add">Add Property</button>
             </div>
+
             <div class="properties-grid">
               <div *ngFor="let prop of myProperties" class="property-card">
                 <div class="property-header">
@@ -343,17 +293,13 @@ import { AdminSidebarComponent } from '../admin-sidebar/admin-sidebar.component'
                   <p class="location">📍 {{ prop.location }}{{ prop.city ? ', ' + prop.city : '' }}</p>
                   <div class="property-specs">
                     <span class="spec">🏢 {{ prop.numberOfUnits || 0 }} Units</span>
-                    <span class="spec">📐 {{ (prop.size.totalArea || prop.area) | number }} sqft</span>
+                    <span class="spec">📐 {{ (prop.size.builtArea || prop.size.totalArea || prop.area) | number }} sqft</span>
                     <span class="spec">🏷️ {{ prop.reraDetails.reraStatus || 'N/A' }}</span>
                   </div>
                 </div>
                 <div class="property-actions">
-                  <button (click)="editProperty(prop)" class="btn-edit">
-                    <span>✏️</span> Edit
-                  </button>
-                  <button (click)="deleteProperty(prop.id!)" class="btn-delete">
-                    <span>🗑️</span> Delete
-                  </button>
+                  <button (click)="editProperty(prop)" class="btn-edit"><span>✏️</span> Edit</button>
+                  <button (click)="deleteProperty(prop.id!)" class="btn-delete"><span>🗑️</span> Delete</button>
                 </div>
               </div>
             </div>
@@ -374,17 +320,12 @@ export class AdminDashboardComponent implements OnInit {
   uploadProgress = 0;
   selectedPreviews: string[] = [];
   editingId: string | null = null;
-  floorPlanInput = '';
-  amenityOptions: string[] = [
+
+  sportsAmenityOptions: string[] = [
     'Clubhouse',
     'Gymnasium',
     'Swimming Pool',
     'Kids Play Area',
-    'Landscaped Garden',
-    'Power Backup',
-    'Lift',
-    'Treated Water',
-    'Pet Area',
     'Badminton Court',
     'Football',
     'Cricket',
@@ -395,8 +336,20 @@ export class AdminDashboardComponent implements OnInit {
     'Table Tennis',
     'Snooker/pool',
     'Cycle',
+  ];
+
+  convenienceAmenityOptions: string[] = [
+    'Landscaped Garden',
+    'Power Backup',
+    'Lift',
+    'Treated Water',
+    'Pet Area',
+  ];
+
+  leisureAmenityOptions: string[] = [
     'Library',
     'Party Hall',
+    'Clubhouse',
     'Café',
     'Indoor Games',
     'Spa',
@@ -458,6 +411,9 @@ export class AdminDashboardComponent implements OnInit {
       next: (results) => {
         const urls = results.map((r) => r.secure_url).filter(Boolean);
         this.formData.images = [...(this.formData.images || []), ...urls];
+        if (!this.formData.mainImage && this.formData.images.length > 0) {
+          this.formData.mainImage = this.formData.images[0];
+        }
         this.selectedPreviews = [];
         this.uploadProgress = 100;
         this.uploadingImages = false;
@@ -474,22 +430,77 @@ export class AdminDashboardComponent implements OnInit {
     });
   }
 
+  onFloorPlanSelected(event: any) {
+    const files: File[] = Array.from(event.target.files || []);
+    if (files.length === 0) {
+      return;
+    }
+
+    this.uploadingImages = true;
+    this.cloudinaryService.uploadMultipleFiles(files).subscribe({
+      next: (results) => {
+        const urls = results.map((r) => r.secure_url).filter(Boolean);
+        this.formData.floorPlans = [...(this.formData.floorPlans || []), ...urls];
+        this.uploadingImages = false;
+      },
+      error: (error) => {
+        console.error('Error uploading floor plans:', error);
+        this.uploadingImages = false;
+        alert('Floor plan upload failed. Please retry.');
+      },
+    });
+  }
+
   removeUploadedImage(url: string) {
     this.formData.images = (this.formData.images || []).filter((u) => u !== url);
+    if (this.formData.mainImage === url) {
+      this.formData.mainImage = this.formData.images[0] || undefined;
+    }
+  }
+
+  setMainImage(url: string) {
+    if (!url) {
+      return;
+    }
+
+    this.formData.mainImage = url;
+  }
+
+  removeFloorPlan(url: string) {
+    this.formData.floorPlans = (this.formData.floorPlans || []).filter((u) => u !== url);
+  }
+
+  addPriceListRow() {
+    this.formData.priceList = [...(this.formData.priceList || []), { configuration: '', area: 0, price: 0 }];
+  }
+
+  removePriceListRow(index: number) {
+    this.formData.priceList = (this.formData.priceList || []).filter((_, i) => i !== index);
+  }
+
+  isAmenitySelected(category: 'sports' | 'convenience' | 'leisure', amenity: string): boolean {
+    return (this.formData.amenitiesByCategory[category] || []).includes(amenity);
+  }
+
+  toggleAmenity(category: 'sports' | 'convenience' | 'leisure', amenity: string, event: Event) {
+    const checked = (event.target as HTMLInputElement).checked;
+    const current = this.formData.amenitiesByCategory[category] || [];
+
+    if (checked) {
+      this.formData.amenitiesByCategory[category] = current.includes(amenity) ? current : [...current, amenity];
+      return;
+    }
+
+    this.formData.amenitiesByCategory[category] = current.filter((item) => item !== amenity);
   }
 
   saveProperty() {
     if (this.uploadingImages) {
-      alert('Please wait for image upload to complete before saving.');
+      alert('Please wait for uploads to complete before saving.');
       return;
     }
 
     this.saving = true;
-    this.formData.floorPlans = this.floorPlanInput
-      .split(',')
-      .map((url) => url.trim())
-      .filter((url) => url.length > 0);
-
     const payload = this.preparePropertyPayload();
 
     if (this.editingId) {
@@ -513,34 +524,36 @@ export class AdminDashboardComponent implements OnInit {
             alert('Update took too long or failed. Please try again.');
           },
         });
-    } else {
-      this.propertyService
-        .createProperty(payload as Property)
-        .pipe(
-          timeout(20000),
-          finalize(() => {
-            this.saving = false;
-          })
-        )
-        .subscribe({
-          next: () => {
-            this.activeTab = 'list';
-            this.resetForm();
-            this.loadMyProperties();
-            alert('Property added successfully!');
-          },
-          error: (error) => {
-            console.error('Error adding property:', error);
-            alert('Save took too long or failed. Please try again.');
-          },
-        });
+      return;
     }
+
+    this.propertyService
+      .createProperty(payload as Property)
+      .pipe(
+        timeout(20000),
+        finalize(() => {
+          this.saving = false;
+        })
+      )
+      .subscribe({
+        next: () => {
+          this.activeTab = 'list';
+          this.resetForm();
+          this.loadMyProperties();
+          alert('Property added successfully!');
+        },
+        error: (error) => {
+          console.error('Error adding property:', error);
+          alert('Save took too long or failed. Please try again.');
+        },
+      });
   }
 
   editProperty(property: Property) {
     this.activeTab = 'add';
     this.editingId = property.id || null;
     const defaults = this.getDefaultProperty();
+
     this.formData = {
       ...defaults,
       ...property,
@@ -560,6 +573,14 @@ export class AdminDashboardComponent implements OnInit {
         ...defaults.size,
         ...(property.size || {}),
       },
+      amenitiesByCategory: {
+        ...defaults.amenitiesByCategory,
+        ...(property.amenitiesByCategory || {}),
+      },
+      propertyType: {
+        ...defaults.propertyType,
+        ...(property.propertyType || {}),
+      },
       reraDetails: {
         ...defaults.reraDetails,
         ...(property.reraDetails || {}),
@@ -568,8 +589,15 @@ export class AdminDashboardComponent implements OnInit {
       amenities: Array.isArray(property.amenities) ? property.amenities : [],
       floorPlans: Array.isArray(property.floorPlans) ? property.floorPlans : [],
       images: Array.isArray(property.images) ? property.images : [],
+      mainImage: property.mainImage || (Array.isArray(property.images) && property.images.length > 0 ? property.images[0] : undefined),
     };
-    this.floorPlanInput = this.formData.floorPlans.join(', ');
+
+    if ((!this.formData.amenitiesByCategory.sports.length && !this.formData.amenitiesByCategory.convenience.length && !this.formData.amenitiesByCategory.leisure.length) && this.formData.amenities.length > 0) {
+      this.formData.amenitiesByCategory.sports = this.formData.amenities.filter((a) => this.sportsAmenityOptions.includes(a));
+      this.formData.amenitiesByCategory.convenience = this.formData.amenities.filter((a) => this.convenienceAmenityOptions.includes(a));
+      this.formData.amenitiesByCategory.leisure = this.formData.amenities.filter((a) => this.leisureAmenityOptions.includes(a));
+    }
+
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -592,39 +620,13 @@ export class AdminDashboardComponent implements OnInit {
     this.resetForm();
   }
 
-  addPriceListRow() {
-    this.formData.priceList = [...(this.formData.priceList || []), { configuration: '', area: 0, price: 0 }];
-  }
-
-  removePriceListRow(index: number) {
-    this.formData.priceList = (this.formData.priceList || []).filter((_, i) => i !== index);
-  }
-
-  isAmenitySelected(amenity: string): boolean {
-    return (this.formData.amenities || []).includes(amenity);
-  }
-
-  toggleAmenity(amenity: string, event: Event) {
-    const checked = (event.target as HTMLInputElement).checked;
-    const currentAmenities = this.formData.amenities || [];
-
-    if (checked) {
-      this.formData.amenities = currentAmenities.includes(amenity)
-        ? currentAmenities
-        : [...currentAmenities, amenity];
-      return;
-    }
-
-    this.formData.amenities = currentAmenities.filter((item) => item !== amenity);
-  }
-
   private getDefaultProperty(): Property {
     return {
       name: '',
       title: '',
-      description: '',
       location: '',
       city: '',
+      description: '',
       numberOfUnits: 0,
       priceDetails: {
         basePrice: 0,
@@ -632,9 +634,9 @@ export class AdminDashboardComponent implements OnInit {
         totalPrice: 0,
       },
       status: {
-        preConstruction: false,
         underConstruction: false,
         readyToMove: false,
+        resale: false,
       },
       unitConfig: {
         '1bhk': false,
@@ -645,42 +647,61 @@ export class AdminDashboardComponent implements OnInit {
       },
       size: {
         carpetArea: 0,
+        builtArea: 0,
         totalArea: 0,
-        label: '',
       },
       priceList: [],
       floorPlans: [],
       amenities: [],
+      amenitiesByCategory: {
+        sports: [],
+        convenience: [],
+        leisure: [],
+      },
       reraDetails: {
         reraNumber: '',
         reraStatus: '',
         possession: '',
       },
       images: [],
+      mainImage: undefined,
+      category: '',
+      propertyType: {
+        apartment: false,
+        villa: false,
+        house: false,
+        plot: false,
+        office: false,
+        shop: false,
+      },
       price: 0,
       bedrooms: 0,
       bathrooms: 0,
       area: 0,
+      possessionStatus: '',
       features: [],
       owner: '',
-      email: '',
       phone: '',
+      email: '',
     };
   }
 
   private resetForm() {
     this.editingId = null;
     this.formData = this.getDefaultProperty();
-    this.floorPlanInput = '';
     this.uploadingImages = false;
     this.selectedPreviews = [];
   }
 
   private preparePropertyPayload(): Partial<Property> {
-    const totalPrice = Number(this.formData.priceDetails.totalPrice) || 0;
     const basePrice = Number(this.formData.priceDetails.basePrice) || 0;
     const governmentCharge = Number(this.formData.priceDetails.governmentCharge) || 0;
-    const selectedAmenities = Array.isArray(this.formData.amenities) ? this.formData.amenities.filter(Boolean) : [];
+    const totalPrice = Number(this.formData.priceDetails.totalPrice) || basePrice + governmentCharge;
+
+    const sports = this.formData.amenitiesByCategory.sports || [];
+    const convenience = this.formData.amenitiesByCategory.convenience || [];
+    const leisure = this.formData.amenitiesByCategory.leisure || [];
+    const selectedAmenities = Array.from(new Set([...sports, ...convenience, ...leisure].filter(Boolean)));
 
     let bedrooms = 0;
     if (this.formData.unitConfig['5bhk']) bedrooms = 5;
@@ -695,27 +716,35 @@ export class AdminDashboardComponent implements OnInit {
         ? 'Ready to move'
         : this.formData.status.underConstruction
           ? 'Under construction'
-          : this.formData.status.preConstruction
-            ? 'Pre construction'
+          : this.formData.status.resale
+            ? 'Resale'
             : '');
 
     return {
       name: this.formData.name,
       title: this.formData.name,
-      description: this.formData.description,
-      price: totalPrice || basePrice,
       location: this.formData.location,
       city: this.formData.city,
+      description: this.formData.description,
       numberOfUnits: Number(this.formData.numberOfUnits) || 0,
+      category: this.formData.category,
+      propertyType: {
+        apartment: !!this.formData.propertyType.apartment,
+        villa: !!this.formData.propertyType.villa,
+        house: !!this.formData.propertyType.house,
+        plot: !!this.formData.propertyType.plot,
+        office: !!this.formData.propertyType.office,
+        shop: !!this.formData.propertyType.shop,
+      },
       priceDetails: {
         basePrice,
         governmentCharge,
-        totalPrice: totalPrice || basePrice + governmentCharge,
+        totalPrice,
       },
       status: {
-        preConstruction: !!this.formData.status.preConstruction,
         underConstruction: !!this.formData.status.underConstruction,
         readyToMove: !!this.formData.status.readyToMove,
+        resale: !!this.formData.status.resale,
       },
       unitConfig: {
         '1bhk': !!this.formData.unitConfig['1bhk'],
@@ -726,8 +755,8 @@ export class AdminDashboardComponent implements OnInit {
       },
       size: {
         carpetArea: Number(this.formData.size.carpetArea) || 0,
-        totalArea: Number(this.formData.size.totalArea) || 0,
-        label: this.formData.size.label || '',
+        builtArea: Number(this.formData.size.builtArea || this.formData.size.totalArea) || 0,
+        totalArea: Number(this.formData.size.builtArea || this.formData.size.totalArea) || 0,
       },
       priceList: (this.formData.priceList || [])
         .map((item) => ({
@@ -737,6 +766,11 @@ export class AdminDashboardComponent implements OnInit {
         }))
         .filter((item) => item.configuration.length > 0),
       floorPlans: Array.isArray(this.formData.floorPlans) ? this.formData.floorPlans.filter(Boolean) : [],
+      amenitiesByCategory: {
+        sports: sports.filter(Boolean),
+        convenience: convenience.filter(Boolean),
+        leisure: leisure.filter(Boolean),
+      },
       amenities: selectedAmenities,
       reraDetails: {
         reraNumber: this.formData.reraDetails.reraNumber || '',
@@ -744,9 +778,11 @@ export class AdminDashboardComponent implements OnInit {
         possession: this.formData.reraDetails.possession || '',
       },
       images: Array.isArray(this.formData.images) ? this.formData.images.filter(Boolean) : [],
+      mainImage: this.formData.mainImage || (Array.isArray(this.formData.images) && this.formData.images.length > 0 ? this.formData.images[0] : undefined),
+      price: totalPrice,
       bedrooms,
       bathrooms: Number(this.formData.bathrooms) || 0,
-      area: Number(this.formData.size.totalArea || this.formData.size.carpetArea) || 0,
+      area: Number(this.formData.size.builtArea || this.formData.size.totalArea || this.formData.size.carpetArea) || 0,
       possessionStatus,
       features: selectedAmenities,
       owner: this.formData.owner,

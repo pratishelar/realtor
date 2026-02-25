@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
+import { DocumentData, QueryDocumentSnapshot } from '@angular/fire/firestore';
 import { PropertyService } from '../../services/property.service';
 import { Property } from '../../models/property.model';
 
@@ -23,59 +24,6 @@ import { Property } from '../../models/property.model';
         <div class="col-12 col-lg-3" [class.d-none]="!showFilters" [class.d-lg-block]="true">
           <div class="sidebar-filters card p-4">
 
-            <!-- Category (moved to top) -->
-            <div class="filter-section mb-4">
-              <label class="form-label fw-bold">Category</label>
-              <div class="checkbox-group">
-                <div class="form-check mb-2">
-                  <input type="checkbox" class="form-check-input" id="cat-residential" [(ngModel)]="selectedResidential" (change)="applyFilters()" />
-                  <label class="form-check-label" for="cat-residential">Residential</label>
-                </div>
-                <div class="form-check mb-2">
-                  <input type="checkbox" class="form-check-input" id="cat-commercial" [(ngModel)]="selectedCommercial" (change)="applyFilters()" />
-                  <label class="form-check-label" for="cat-commercial">Commercial</label>
-                </div>
-              </div>
-            </div>
-
-            <!-- Property Type (moved to top) -->
-            <div class="filter-section mb-4">
-              <label class="form-label fw-bold">Property Type</label>
-              <div class="checkbox-group">
-                <div class="form-check mb-2">
-                  <input type="checkbox" class="form-check-input" (change)="applyFilters()" />
-                  <label class="form-check-label">Apartment</label>
-                </div>
-                <div class="form-check mb-2">
-                  <input type="checkbox" class="form-check-input" (change)="applyFilters()" />
-                  <label class="form-check-label">House</label>
-                </div>
-                <div class="form-check mb-2">
-                  <input type="checkbox" class="form-check-input" (change)="applyFilters()" />
-                  <label class="form-check-label">Villa</label>
-                </div>
-                <div class="form-check mb-2">
-                  <input type="checkbox" class="form-check-input" (change)="applyFilters()" />
-                  <label class="form-check-label">Condo</label>
-                </div>
-              </div>
-            </div>
-
-            <!-- Possession Status -->
-            <div class="filter-section mb-4">
-              <label class="form-label fw-bold">Possession Status</label>
-              <div class="checkbox-group">
-                <div class="form-check mb-2">
-                  <input type="checkbox" class="form-check-input" id="resale" [(ngModel)]="selectedResale" (change)="applyFilters()" />
-                  <label class="form-check-label" for="resale">Resale / Ready to Move</label>
-                </div>
-                <div class="form-check mb-2">
-                  <input type="checkbox" class="form-check-input" id="construction" [(ngModel)]="selectedUnderConstruction" (change)="applyFilters()" />
-                  <label class="form-check-label" for="construction">Under Construction</label>
-                </div>
-              </div>
-            </div>
-
             <!-- Search Bar -->
             <div class="filter-section mb-4">
               <label class="form-label fw-bold">Search</label>
@@ -86,6 +34,91 @@ import { Property } from '../../models/property.model';
                 (keyup)="applyFilters()"
                 class="form-control"
               />
+            </div>
+
+            <!-- Category (moved to top) -->
+            <div class="filter-section mb-4">
+              <label class="form-label fw-bold">Category</label>
+              <div class="property-type-chip-wrap">
+                <button
+                  type="button"
+                  class="property-type-chip"
+                  [class.active]="selectedCategory === 'residential'"
+                  [attr.aria-pressed]="selectedCategory === 'residential'"
+                  (click)="selectedCategory = 'residential'; onCategoryChange()"
+                >
+                  <span class="chip-check">✓</span>
+                  <span>Residential</span>
+                </button>
+
+                <button
+                  type="button"
+                  class="property-type-chip"
+                  [class.active]="selectedCategory === 'commercial'"
+                  [attr.aria-pressed]="selectedCategory === 'commercial'"
+                  (click)="selectedCategory = 'commercial'; onCategoryChange()"
+                >
+                  <span class="chip-check">✓</span>
+                  <span>Commercial</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Property Type (moved to top) -->
+            <div class="filter-section mb-4">
+              <label class="form-label fw-bold">Property Type</label>
+              <div class="property-type-chip-wrap">
+                <button
+                  type="button"
+                  class="property-type-chip"
+                  *ngFor="let type of getAvailablePropertyTypes()"
+                  [class.active]="isPropertyTypeSelected(type.key)"
+                  [attr.aria-pressed]="isPropertyTypeSelected(type.key)"
+                  (click)="togglePropertyType(type.key)"
+                >
+                  <span class="chip-check">✓</span>
+                  <span>{{ type.label }}</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Possession Status -->
+            <div class="filter-section mb-4">
+              <label class="form-label fw-bold">Possession Status</label>
+              <div class="property-type-chip-wrap">
+                <button
+                  type="button"
+                  class="property-type-chip"
+                  [class.active]="selectedResale"
+                  [attr.aria-pressed]="selectedResale"
+                  (click)="selectedResale = !selectedResale; onPossessionFilterChange()"
+                >
+                  <span class="chip-check">✓</span>
+                  <span>Resale</span>
+                </button>
+
+                <button
+                  type="button"
+                  class="property-type-chip"
+                  [class.active]="selectedReadyToMove"
+                  [attr.aria-pressed]="selectedReadyToMove"
+                  (click)="selectedReadyToMove = !selectedReadyToMove; onPossessionFilterChange()"
+                >
+                  <span class="chip-check">✓</span>
+                  <span>Ready to Move</span>
+                </button>
+
+                <button
+                  type="button"
+                  class="property-type-chip"
+                  [class.active]="selectedUnderConstruction"
+                  [attr.aria-pressed]="selectedUnderConstruction"
+                  (click)="selectedUnderConstruction = !selectedUnderConstruction; onPossessionFilterChange()"
+                >
+                  <span class="chip-check">✓</span>
+                  <span>Under Construction</span>
+                </button>
+              </div>
             </div>
 
             <!-- Price Range -->
@@ -201,9 +234,9 @@ import { Property } from '../../models/property.model';
                   <div class="col-12 col-lg-5">
                     <div class="property-image-container position-relative">
                       <img
-                        *ngIf="property.images && property.images.length > 0"
-                        [src]="property.images[0]"
-                        [alt]="property.title"
+                        *ngIf="property.mainImage || (property.images && property.images.length > 0)"
+                        [src]="getPrimaryImage(property)"
+                        [alt]="property.name || property.title"
                         loading="lazy"
                         (error)="handleImageError($event)"
                         class="property-main-image"
@@ -225,20 +258,18 @@ import { Property } from '../../models/property.model';
                     <div class="property-content p-3">
                       <!-- Title and Location -->
                       <div class="mb-3">
-                        <h3 class="property-listing-title mb-2">{{ property.title }}</h3>
+                        <h3 class="property-listing-title mb-2">{{ property.name || property.title }}</h3>
                         <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
                           <p class="property-subtitle text-muted mb-0">
-                            {{ property.bedrooms }} BHK for Sale in {{ property.location }}
+                            {{ getPrimaryConfig(property) }} for Sale in {{ property.city || property.location }}
                           </p>
-                          <a href="#" class="text-decoration-none small" (click)="$event.preventDefault()">
-                            <span class="text-danger">📍</span> See on Map
-                          </a>
+                     
                         </div>
                       </div>
                       
                       <!-- Price -->
                       <div class="property-price mb-3">
-                        <h2 class="mb-0 fw-bold">\${{ property.price | number }}</h2>
+                        <h2 class="mb-0 fw-bold">₹{{ getDisplayPrice(property) | number }}</h2>
                       </div>
                       
                       <!-- Features Grid -->
@@ -246,31 +277,31 @@ import { Property } from '../../models/property.model';
                         <div class="col-6 col-md-4">
                           <div class="feature-item d-flex align-items-center gap-2">
                             <span class="feature-icon">🛏️</span>
-                            <span class="feature-text">{{ property.bedrooms }} BHK + {{ property.bathrooms }} Bath</span>
+                            <span class="feature-text">{{ getPrimaryConfig(property) }} + {{ property.bathrooms }} Bath</span>
                           </div>
                         </div>
                         <div class="col-6 col-md-4">
                           <div class="feature-item d-flex align-items-center gap-2">
                             <span class="feature-icon">📐</span>
-                            <span class="feature-text">{{ property.area | number }} Sq.Ft</span>
+                            <span class="feature-text">{{ getDisplayArea(property) | number }} Sq.Ft</span>
                           </div>
                         </div>
                         <div class="col-6 col-md-4">
                           <div class="feature-item d-flex align-items-center gap-2">
                             <span class="feature-icon">🏢</span>
-                            <span class="feature-text">Ready To Move</span>
+                            <span class="feature-text">{{ getDisplayStatus(property) }}</span>
                           </div>
                         </div>
                         <div class="col-6 col-md-4">
                           <div class="feature-item d-flex align-items-center gap-2">
                             <span class="feature-icon">🪑</span>
-                            <span class="feature-text">Semi-Furnished</span>
+                            <span class="feature-text">{{ property.numberOfUnits || 0 }} Units</span>
                           </div>
                         </div>
                         <div class="col-6 col-md-4">
                           <div class="feature-item d-flex align-items-center gap-2">
                             <span class="feature-icon">🅿️</span>
-                            <span class="feature-text">Covered Parking</span>
+                            <span class="feature-text">RERA: {{ property.reraDetails.reraStatus || 'N/A' }}</span>
                           </div>
                         </div>
                       </div>
@@ -285,34 +316,10 @@ import { Property } from '../../models/property.model';
                       
                       <!-- Tags -->
                       <div class="property-tags mb-3 d-flex flex-wrap gap-2">
-                        <span class="badge bg-light text-dark border">SAFE & SECURE</span>
-                        <span class="badge bg-light text-dark border">AFFORDABLE</span>
-                        <span class="badge bg-light text-dark border">SPACIOUS</span>
-                        <span class="badge bg-light text-dark border">WELL MAINTAINED</span>
+                        <span class="badge bg-light text-dark border" *ngFor="let tag of getAmenityTags(property)">{{ tag }}</span>
                       </div>
                       
-                      <!-- Agent and Actions -->
-                      <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 pt-3 border-top">
-                        <div class="agent-info d-flex align-items-center gap-2">
-                          <div class="agent-avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-                            {{ property.owner ? property.owner.charAt(0).toUpperCase() : 'A' }}
-                          </div>
-                          <div>
-                            <div class="fw-semibold">{{ property.owner || 'Property Agent' }}</div>
-                            <div class="small text-muted">
-                              <span class="badge badge-sm bg-warning text-dark">PRO AGENT</span>
-                            </div>
-                          </div>
-                        </div>
-                        <div class="action-buttons d-flex gap-2">
-                          <button class="btn btn-outline-dark btn-sm" (click)="$event.stopPropagation()">
-                            📞 View Number
-                          </button>
-                          <button class="btn btn-warning btn-sm text-dark fw-semibold" (click)="$event.stopPropagation(); openPropertyDetails(property.id)">
-                            📧 Contact Agent
-                          </button>
-                        </div>
-                      </div>
+                      
                     </div>
                   </div>
                 </div>
@@ -320,14 +327,72 @@ import { Property } from '../../models/property.model';
             </div>
           </div>
 
-          <div class="text-center mt-4" *ngIf="filteredProperties.length > displayLimit">
-            <button class="btn btn-outline-primary" (click)="loadMoreProperties()">Load More Properties</button>
+          <div class="d-flex justify-content-center align-items-center gap-2 mt-4" *ngIf="!loading && !loadError && filteredProperties.length > 0">
+            <button class="btn btn-outline-primary btn-sm" (click)="previousPage()" [disabled]="currentPage === 1 || loadingMore">Previous</button>
+
+            <button
+              type="button"
+              class="btn btn-sm"
+              *ngFor="let page of getPaginationPages()"
+              [class.btn-primary]="page === currentPage"
+              [class.btn-outline-primary]="page !== currentPage"
+              (click)="goToPage(page)"
+              [disabled]="loadingMore"
+            >
+              {{ page }}
+            </button>
+
+            <button class="btn btn-outline-primary btn-sm" (click)="nextPage()" [disabled]="loadingMore || (!hasMoreProperties && currentPage >= totalPages)">
+              Next
+            </button>
           </div>
         </div>
       </div>
     </div>
   `,
-  styles: []
+  styles: [`
+    .property-type-chip-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+
+    .property-type-chip {
+      border: 1px solid #cfcfcf;
+      border-radius: 0.95rem;
+      background: #fff;
+      color: #5e5e5e;
+      padding: 0.5rem 0.8rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      font-weight: 600;
+      font-size: 0.9rem;
+      line-height: 1;
+      transition: all 0.2s ease;
+    }
+
+    .property-type-chip:hover {
+      border-color: #b9b9b9;
+      background: #fafafa;
+    }
+
+    .property-type-chip.active {
+      border-color: #9ec8ff;
+      background: #e8f3ff;
+      color: #1f5fa8;
+    }
+
+    .chip-check {
+      font-size: 0.85rem;
+      color: #9b9b9b;
+      font-weight: 700;
+    }
+
+    .property-type-chip.active .chip-check {
+      color: #2c74c9;
+    }
+  `]
 })
 export class PropertiesComponent implements OnInit {
   private readonly fallbackImage = 'https://images.unsplash.com/photo-1493666438817-866a91353ca9?w=1200&h=800&fit=crop&q=80';
@@ -335,9 +400,13 @@ export class PropertiesComponent implements OnInit {
   filteredProperties: Property[] = [];
   visibleProperties: Property[] = [];
   loading = false;
+  loadingMore = false;
   loadError = '';
   showFilters = false;
-  displayLimit = 12;
+  pageSize = 4;
+  currentPage = 1;
+  hasMoreProperties = false;
+  nextCursor: QueryDocumentSnapshot<DocumentData> | null = null;
 
   searchQuery = '';
   priceFloor = 0;
@@ -348,10 +417,20 @@ export class PropertiesComponent implements OnInit {
   selectedBathrooms: number | null = null;
   minArea = 0;
   sortBy = 'newest';
-  selectedResidential = false;
-  selectedCommercial = false;
+  selectedCategory: 'residential' | 'commercial' = 'residential';
+  selectedPropertyTypes: string[] = [];
   selectedResale = false;
+  selectedReadyToMove = false;
   selectedUnderConstruction = false;
+
+  propertyTypeOptions: Array<{ key: string; label: string; category: 'residential' | 'commercial' }> = [
+    { key: 'apartment', label: 'Apartment', category: 'residential' },
+    { key: 'villa', label: 'Villa', category: 'residential' },
+    { key: 'house', label: 'House', category: 'residential' },
+    { key: 'plot', label: 'Plot', category: 'commercial' },
+    { key: 'office', label: 'Office', category: 'commercial' },
+    { key: 'shop', label: 'Shop', category: 'commercial' },
+  ];
 
   constructor(private propertyService: PropertyService, private router: Router) {}
 
@@ -359,16 +438,30 @@ export class PropertiesComponent implements OnInit {
     this.loadProperties();
   }
 
+  private getServerFilters() {
+    return {
+      category: this.selectedCategory,
+      resale: this.selectedResale,
+      readyToMove: this.selectedReadyToMove,
+      underConstruction: this.selectedUnderConstruction,
+    };
+  }
+
   loadProperties() {
     this.loading = true;
     this.loadError = '';
-    this.propertyService.getProperties().subscribe({
-      next: (data) => {
-        const normalized = (data || []).map((property) => this.normalizeProperty(property));
+    this.nextCursor = null;
+    this.hasMoreProperties = false;
+
+    this.propertyService.getPropertiesPage(this.pageSize, null, this.getServerFilters()).subscribe({
+      next: (page) => {
+        const normalized = (page.items || []).map((property) => this.normalizeProperty(property));
         this.updatePriceBounds(normalized);
         this.allProperties = normalized;
-        this.filteredProperties = normalized;
-        this.updateVisibleProperties();
+        this.hasMoreProperties = page.hasMore;
+        this.nextCursor = page.nextCursor;
+        this.currentPage = 1;
+        this.applyFilters();
         this.loading = false;
       },
       error: (error) => {
@@ -376,6 +469,8 @@ export class PropertiesComponent implements OnInit {
         this.allProperties = [];
         this.filteredProperties = [];
         this.visibleProperties = [];
+        this.hasMoreProperties = false;
+        this.nextCursor = null;
         this.loadError = 'Unable to load properties right now. Please try again.';
         this.loading = false;
       },
@@ -396,6 +491,8 @@ export class PropertiesComponent implements OnInit {
       filtered = filtered.filter(
         (p) =>
           (p.title && p.title.toLowerCase().includes(query)) ||
+          (p.name && p.name.toLowerCase().includes(query)) ||
+          (p.city && p.city.toLowerCase().includes(query)) ||
           (p.location && p.location.toLowerCase().includes(query)) ||
           (p.description && p.description.toLowerCase().includes(query))
       );
@@ -403,7 +500,7 @@ export class PropertiesComponent implements OnInit {
 
     // Price filter
     filtered = filtered.filter(
-      (p) => p.price >= this.minPrice && p.price <= this.maxPrice
+        (p) => this.getDisplayPrice(p) >= this.minPrice && this.getDisplayPrice(p) <= this.maxPrice
     );
 
     // Bedrooms filter
@@ -425,50 +522,84 @@ export class PropertiesComponent implements OnInit {
     }
 
     // Area filter
-    filtered = filtered.filter((p) => p.area >= this.minArea);
+    filtered = filtered.filter((p) => this.getDisplayArea(p) >= this.minArea);
 
-    // Category filter (Residential/Commercial)
-    if (this.selectedResidential || this.selectedCommercial) {
+    // Category filter (single-select)
+    if (this.selectedCategory) {
       filtered = filtered.filter((p) => {
-        const titleLower = p.title.toLowerCase();
+        const directCategory = (p.category || '').toLowerCase();
+        if (directCategory === this.selectedCategory) {
+          return true;
+        }
+
+        const titleLower = (p.name || p.title || '').toLowerCase();
         const descLower = p.description.toLowerCase();
         const isResidential =
-          titleLower.includes('apartment') ||
-          titleLower.includes('house') ||
-          titleLower.includes('villa') ||
-          titleLower.includes('condo') ||
-          titleLower.includes('residential') ||
-          descLower.includes('apartment') ||
-          descLower.includes('house') ||
-          descLower.includes('villa') ||
-          descLower.includes('condo') ||
-          descLower.includes('residential');
+          this.containsWholeWord(titleLower, 'apartment') ||
+          this.containsWholeWord(titleLower, 'house') ||
+          this.containsWholeWord(titleLower, 'villa') ||
+          this.containsWholeWord(titleLower, 'condo') ||
+          this.containsWholeWord(titleLower, 'residential') ||
+          this.containsWholeWord(descLower, 'apartment') ||
+          this.containsWholeWord(descLower, 'house') ||
+          this.containsWholeWord(descLower, 'villa') ||
+          this.containsWholeWord(descLower, 'condo') ||
+          this.containsWholeWord(descLower, 'residential');
 
         const isCommercial =
-          titleLower.includes('commercial') ||
-          titleLower.includes('office') ||
-          titleLower.includes('shop') ||
-          titleLower.includes('mall') ||
-          descLower.includes('commercial') ||
-          descLower.includes('office') ||
-          descLower.includes('shop') ||
-          descLower.includes('mall');
+          this.containsWholeWord(titleLower, 'commercial') ||
+          this.containsWholeWord(titleLower, 'office') ||
+          this.containsWholeWord(titleLower, 'shop') ||
+          this.containsWholeWord(titleLower, 'mall') ||
+          this.containsWholeWord(titleLower, 'plot') ||
+          this.containsWholeWord(descLower, 'commercial') ||
+          this.containsWholeWord(descLower, 'office') ||
+          this.containsWholeWord(descLower, 'shop') ||
+          this.containsWholeWord(descLower, 'mall') ||
+          this.containsWholeWord(descLower, 'plot');
 
-        // Include if it matches selected category
-        if (this.selectedResidential && isResidential) return true;
-        if (this.selectedCommercial && isCommercial) return true;
-        return false;
+        return this.selectedCategory === 'residential' ? isResidential : isCommercial;
+      });
+    }
+
+    // Property type filter
+    if (this.selectedPropertyTypes.length > 0) {
+      filtered = filtered.filter((p) => {
+        const typeFlags = p.propertyType || {};
+        const titleLower = (p.name || p.title || '').toLowerCase();
+        const descLower = (p.description || '').toLowerCase();
+
+        return this.selectedPropertyTypes.some((typeKey) => {
+          if ((typeFlags as any)[typeKey]) {
+            return true;
+          }
+
+          return titleLower.includes(typeKey) || descLower.includes(typeKey);
+        });
       });
     }
 
     // Possession status filter
-    if (this.selectedResale || this.selectedUnderConstruction) {
+    if (this.selectedResale || this.selectedReadyToMove || this.selectedUnderConstruction) {
       filtered = filtered.filter((p) => {
-        const poss = (p as any).possessionStatus || (p as any).possession || '';
-        const lower = (poss || '').toString().toLowerCase();
-        const isResale = lower.includes('resale') || lower.includes('ready') || lower.includes('ready to move') || lower.includes('ready-to-move');
-        const isUnder = lower.includes('under') || lower.includes('construction') || lower.includes('under construction');
+        const lower = this.getDisplayStatus(p).toLowerCase();
+        const isResale =
+          !!p.status?.resale ||
+          lower.includes('resale') ||
+          lower.includes('re-sale');
+        const isReadyToMove =
+          !!p.status?.readyToMove ||
+          lower.includes('ready') ||
+          lower.includes('ready to move') ||
+          lower.includes('ready-to-move');
+        const isUnder =
+          !!p.status?.underConstruction ||
+          lower.includes('under') ||
+          lower.includes('construction') ||
+          lower.includes('under construction');
+
         if (this.selectedResale && isResale) return true;
+        if (this.selectedReadyToMove && isReadyToMove) return true;
         if (this.selectedUnderConstruction && isUnder) return true;
         return false;
       });
@@ -477,13 +608,13 @@ export class PropertiesComponent implements OnInit {
     // Sort
     switch (this.sortBy) {
       case 'price-low':
-        filtered.sort((a, b) => a.price - b.price);
+        filtered.sort((a, b) => this.getDisplayPrice(a) - this.getDisplayPrice(b));
         break;
       case 'price-high':
-        filtered.sort((a, b) => b.price - a.price);
+        filtered.sort((a, b) => this.getDisplayPrice(b) - this.getDisplayPrice(a));
         break;
       case 'size':
-        filtered.sort((a, b) => b.area - a.area);
+        filtered.sort((a, b) => this.getDisplayArea(b) - this.getDisplayArea(a));
         break;
       default:
         // Keep original order (newest first)
@@ -491,7 +622,7 @@ export class PropertiesComponent implements OnInit {
     }
 
     this.filteredProperties = filtered;
-    this.displayLimit = 12;
+    this.currentPage = 1;
     this.updateVisibleProperties();
   }
 
@@ -503,22 +634,112 @@ export class PropertiesComponent implements OnInit {
     this.selectedBathrooms = null;
     this.minArea = 0;
     this.sortBy = 'newest';
-    this.selectedResidential = false;
-    this.selectedCommercial = false;
+    this.selectedCategory = 'residential';
+    this.selectedPropertyTypes = [];
     this.selectedResale = false;
+    this.selectedReadyToMove = false;
     this.selectedUnderConstruction = false;
-    this.filteredProperties = [...this.allProperties];
-    this.displayLimit = 12;
-    this.updateVisibleProperties();
+    this.loadProperties();
   }
 
   updateVisibleProperties() {
-    this.visibleProperties = this.filteredProperties.slice(0, this.displayLimit);
+    const start = (this.currentPage - 1) * this.pageSize;
+    const end = start + this.pageSize;
+    this.visibleProperties = this.filteredProperties.slice(start, end);
   }
 
-  loadMoreProperties() {
-    this.displayLimit += 12;
-    this.updateVisibleProperties();
+  private fetchMoreProperties(onDone?: () => void) {
+    if (!this.nextCursor || this.loadingMore) {
+      if (onDone) {
+        onDone();
+      }
+      return;
+    }
+
+    this.loadingMore = true;
+    this.propertyService.getPropertiesPage(this.pageSize, this.nextCursor, this.getServerFilters()).subscribe({
+      next: (page) => {
+        const additional = (page.items || []).map((property) => this.normalizeProperty(property));
+        this.allProperties = [...this.allProperties, ...additional];
+        this.hasMoreProperties = page.hasMore;
+        this.nextCursor = page.nextCursor;
+        this.updatePriceBounds(this.allProperties);
+        const existingPage = this.currentPage;
+        this.applyFilters();
+        this.currentPage = existingPage;
+        this.updateVisibleProperties();
+        this.loadingMore = false;
+        if (onDone) {
+          onDone();
+        }
+      },
+      error: (error) => {
+        console.error('PropertiesComponent - Error loading more properties:', error);
+        this.loadingMore = false;
+        if (onDone) {
+          onDone();
+        }
+      },
+    });
+  }
+
+  goToPage(page: number) {
+    if (page < 1 || this.loadingMore) {
+      return;
+    }
+
+    if (this.hasLocalDataForPage(page)) {
+      this.currentPage = page;
+      this.updateVisibleProperties();
+      return;
+    }
+
+    if (this.hasMoreProperties) {
+      this.fetchMoreProperties(() => this.goToPage(page));
+      return;
+    }
+
+    if (this.totalPages > 0) {
+      this.currentPage = Math.min(page, this.totalPages);
+      this.updateVisibleProperties();
+    }
+  }
+
+  nextPage() {
+    this.goToPage(this.currentPage + 1);
+  }
+
+  previousPage() {
+    this.goToPage(this.currentPage - 1);
+  }
+
+  get totalPages(): number {
+    const localPages = Math.max(1, Math.ceil(this.filteredProperties.length / this.pageSize));
+    return this.hasMoreProperties ? localPages + 1 : localPages;
+  }
+
+  getPaginationPages(): number[] {
+    const pages: number[] = [];
+    const maxButtons = 5;
+    const total = this.totalPages;
+    const half = Math.floor(maxButtons / 2);
+    let start = Math.max(1, this.currentPage - half);
+    let end = Math.min(total, start + maxButtons - 1);
+
+    if (end - start + 1 < maxButtons) {
+      start = Math.max(1, end - maxButtons + 1);
+    }
+
+    for (let value = start; value <= end; value++) {
+      pages.push(value);
+    }
+
+    return pages;
+  }
+
+  private hasLocalDataForPage(page: number): boolean {
+    const start = (page - 1) * this.pageSize;
+    return start < this.filteredProperties.length;
   }
 
   toggleFilters() {
@@ -536,6 +757,38 @@ export class PropertiesComponent implements OnInit {
   onMaxPriceChange() {
     if (this.maxPrice < this.minPrice) {
       this.minPrice = this.maxPrice;
+    }
+
+    this.applyFilters();
+  }
+
+  onCategoryChange() {
+    const allowed = new Set(this.getAvailablePropertyTypes().map((type) => type.key));
+    this.selectedPropertyTypes = this.selectedPropertyTypes.filter((typeKey) => allowed.has(typeKey));
+    this.loadProperties();
+  }
+
+  onPossessionFilterChange() {
+    this.loadProperties();
+  }
+
+  getAvailablePropertyTypes(): Array<{ key: string; label: string; category: 'residential' | 'commercial' }> {
+    if (!this.selectedCategory) {
+      return this.propertyTypeOptions;
+    }
+
+    return this.propertyTypeOptions.filter((type) => type.category === this.selectedCategory);
+  }
+
+  isPropertyTypeSelected(typeKey: string): boolean {
+    return this.selectedPropertyTypes.includes(typeKey);
+  }
+
+  togglePropertyType(typeKey: string) {
+    if (this.selectedPropertyTypes.includes(typeKey)) {
+      this.selectedPropertyTypes = this.selectedPropertyTypes.filter((item) => item !== typeKey);
+    } else {
+      this.selectedPropertyTypes = [...this.selectedPropertyTypes, typeKey];
     }
 
     this.applyFilters();
@@ -565,7 +818,82 @@ export class PropertiesComponent implements OnInit {
   }
 
   trackByPropertyId(index: number, property: Property) {
-    return property.id || `${property.title}-${index}`;
+    return property.id || `${property.name || property.title}-${index}`;
+  }
+
+  contactAgent(property: Property) {
+    if (property.email) {
+      window.location.href = `mailto:${property.email}`;
+      return;
+    }
+
+    this.openPropertyDetails(property.id);
+  }
+
+  getDisplayPrice(property: Property): number {
+    return Number(property.priceDetails.totalPrice || property.price || property.priceDetails.basePrice || 0);
+  }
+
+  getDisplayArea(property: Property): number {
+    return Number(property.size.totalArea || property.area || property.size.carpetArea || 0);
+  }
+
+  getDisplayStatus(property: Property): string {
+    if (property.reraDetails.possession) {
+      return property.reraDetails.possession;
+    }
+
+    if (property.status.resale) {
+      return 'Resale';
+    }
+
+    if (property.status.readyToMove) {
+      return 'Ready to Move';
+    }
+
+    if (property.status.underConstruction) {
+      return 'Under Construction';
+    }
+
+    if (property.status.preConstruction) {
+      return 'Pre Construction';
+    }
+
+    return property.possessionStatus || 'N/A';
+  }
+
+  getPrimaryBedroomCount(property: Property): number {
+    if (property.unitConfig['5bhk']) return 5;
+    if (property.unitConfig['4bhk']) return 4;
+    if (property.unitConfig['3bhk']) return 3;
+    if (property.unitConfig['2bhk']) return 2;
+    if (property.unitConfig['1bhk']) return 1;
+    return Number(property.bedrooms || 0);
+  }
+
+  getPrimaryConfig(property: Property): string {
+    const bedroomCount = this.getPrimaryBedroomCount(property);
+    return bedroomCount > 0 ? `${bedroomCount} BHK` : 'Config N/A';
+  }
+
+  getAmenityTags(property: Property): string[] {
+    return (property.amenities || []).slice(0, 4);
+  }
+
+  getPrimaryImage(property: Property): string {
+    if (property.mainImage && property.mainImage.trim().length > 0) {
+      return property.mainImage;
+    }
+
+    if (property.images && property.images.length > 0) {
+      return property.images[0];
+    }
+
+    return this.fallbackImage;
+  }
+
+  private containsWholeWord(text: string, word: string): boolean {
+    return new RegExp(`\\b${word}\\b`, 'i').test(text || '');
   }
 
   private normalizeProperty(property: Property): Property {
@@ -575,13 +903,16 @@ export class PropertiesComponent implements OnInit {
 
     return {
       ...property,
+      title: property.title || property.name || '',
+      name: property.name || property.title || '',
+      mainImage: property.mainImage || safeImages[0] || undefined,
       images: safeImages,
     };
   }
 
   private updatePriceBounds(properties: Property[]) {
     const prices = properties
-      .map((property) => Number(property.price) || 0)
+      .map((property) => this.getDisplayPrice(property))
       .filter((price) => price > 0);
 
     const maxSeen = prices.length > 0 ? Math.max(...prices) : 1000000;

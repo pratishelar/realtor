@@ -8,48 +8,8 @@ import { AuthService } from '../../services/auth.service';
   selector: 'app-login',
   standalone: true,
   imports: [CommonModule, FormsModule],
-  template: `
-    <div class="login-container container-fluid d-flex justify-content-center align-items-center" style="min-height: 80vh;">
-      <div class="login-form card shadow p-5" style="max-width: 450px; width: 100%;">
-        <h1 class="mb-4 text-center">Admin Login</h1>
-        
-        <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
-
-        <form (ngSubmit)="login()" class="d-grid gap-3">
-          <div class="form-group">
-            <label class="form-label fw-bold">Email:</label>
-            <input
-              type="email"
-              [(ngModel)]="email"
-              name="email"
-              required
-              placeholder="Enter your email"
-              class="form-control"
-            />
-          </div>
-
-          <div class="form-group">
-            <label class="form-label fw-bold">Password:</label>
-            <input
-              type="password"
-              [(ngModel)]="password"
-              name="password"
-              required
-              placeholder="Enter your password"
-              class="form-control"
-            />
-          </div>
-
-          <button type="submit" class="btn btn-primary w-100 py-2 mt-3" [disabled]="loading">
-            {{ loading ? 'Logging in...' : 'Login' }}
-          </button>
-        </form>
-
-        <p class="text-muted text-center mt-4 mb-0 small">Use your Firebase credentials to login as an admin.</p>
-      </div>
-    </div>
-  `,
-  styles: []
+  templateUrl: './login.component.html',
+  styleUrls: ['./login.component.css']
 })
 export class LoginComponent {
   email = '';

@@ -6,11 +6,7 @@ import { RouterModule } from '@angular/router';
   selector: 'app-admin-layout',
   standalone: true,
   imports: [CommonModule, RouterModule],
-  template: `
-    <div class="admin-layout-content container-fluid px-0">
-      <router-outlet></router-outlet>
-    </div>
-  `,
-  styles: []
+  templateUrl: './admin-layout.component.html',
+  styleUrls: ['./admin-layout.component.css']
 })
 export class AdminLayoutComponent {}

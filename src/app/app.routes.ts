@@ -1,36 +1,28 @@
 import { Routes } from '@angular/router';
-import { HomeComponent } from './components/home/home.component';
-import { PropertiesComponent } from './components/properties/properties.component';
-import { PropertyDetailComponent } from './components/property-detail/property-detail.component';
-import { LoginComponent } from './components/login/login.component';
-import { AdminLoginComponent } from './components/admin-login/admin-login.component';
-import { AdminDashboardComponent } from './components/admin-dashboard/admin-dashboard.component';
-import { AboutComponent } from './components/about/about.component';
-import { ContactComponent } from './components/contact/contact.component';
-import { PublicLayoutComponent } from './layouts/public-layout/public-layout.component';
-import { AdminLayoutComponent } from './layouts/admin-layout/admin-layout.component';
 import { authGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
   {
     path: '',
-    component: PublicLayoutComponent,
+    loadComponent: () => import('./layouts/public-layout/public-layout.component').then((m) => m.PublicLayoutComponent),
     children: [
-      { path: '', component: HomeComponent },
-      { path: 'properties', component: PropertiesComponent },
-      { path: 'property/:id', component: PropertyDetailComponent },
-      { path: 'about', component: AboutComponent },
-      { path: 'contact', component: ContactComponent },
-      { path: 'login', component: LoginComponent },
-      { path: 'admin-login', component: AdminLoginComponent },
+      { path: '', loadComponent: () => import('./components/home/home.component').then((m) => m.HomeComponent) },
+      { path: 'properties', loadComponent: () => import('./components/properties/properties.component').then((m) => m.PropertiesComponent) },
+      { path: 'projects', loadComponent: () => import('./components/projects/projects.component').then((m) => m.ProjectsComponent) },
+      { path: 'projects/:id', loadComponent: () => import('./components/project-details/project-details.component').then((m) => m.ProjectDetailsComponent) },
+      { path: 'property/:id', loadComponent: () => import('./components/property-detail/property-detail.component').then((m) => m.PropertyDetailComponent) },
+      { path: 'about', loadComponent: () => import('./components/about/about.component').then((m) => m.AboutComponent) },
+      { path: 'contact', loadComponent: () => import('./components/contact/contact.component').then((m) => m.ContactComponent) },
+      { path: 'login', loadComponent: () => import('./components/login/login.component').then((m) => m.LoginComponent) },
+      { path: 'admin-login', loadComponent: () => import('./components/admin-login/admin-login.component').then((m) => m.AdminLoginComponent) },
     ]
   },
   {
     path: 'admin',
-    component: AdminLayoutComponent,
+    loadComponent: () => import('./layouts/admin-layout/admin-layout.component').then((m) => m.AdminLayoutComponent),
     canActivate: [authGuard],
     children: [
-      { path: '', component: AdminDashboardComponent },
+      { path: '', loadComponent: () => import('./components/admin-dashboard/admin-dashboard.component').then((m) => m.AdminDashboardComponent) },
     ]
   },
   { path: '**', redirectTo: '' },

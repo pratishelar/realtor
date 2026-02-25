@@ -7,45 +7,8 @@ import { Router } from '@angular/router';
   selector: 'app-admin-sidebar',
   standalone: true,
   imports: [CommonModule],
-  template: `
-    <aside class="admin-sidebar bg-dark text-white d-flex flex-column" [class.open]="sidebarOpen">
-      <div class="sidebar-header p-3 border-bottom border-secondary">
-        <div class="d-flex justify-content-between align-items-center">
-          <div class="sidebar-logo fw-bold fs-4">DS Admin</div>
-          <button class="sidebar-toggle btn btn-sm btn-outline-light d-lg-none" (click)="toggleSidebar()">☰</button>
-        </div>
-      </div>
-
-      <nav class="sidebar-nav flex-grow-1 p-3">
-        <button
-          [class.active]="activeTab === 'add'"
-          (click)="selectTab('add')"
-          class="nav-item btn text-start w-100 mb-2 text-white"
-          [class.btn-primary]="activeTab === 'add'"
-          [class.btn-outline-secondary]="activeTab !== 'add'"
-        >
-          <span class="nav-icon me-2">➕</span>
-          <span class="nav-label">Add Property</span>
-        </button>
-
-        <button
-          [class.active]="activeTab === 'list'"
-          (click)="selectTab('list')"
-          class="nav-item btn text-start w-100 mb-2 text-white"
-          [class.btn-primary]="activeTab === 'list'"
-          [class.btn-outline-secondary]="activeTab !== 'list'"
-        >
-          <span class="nav-icon me-2">📋</span>
-          <span class="nav-label">My Properties</span>
-        </button>
-      </nav>
-
-      <div class="sidebar-footer p-3 border-top border-secondary">
-        <button class="logout-btn btn btn-danger w-100" (click)="logout()">🚪 Logout</button>
-      </div>
-    </aside>
-  `,
-  styles: []
+  templateUrl: './admin-sidebar.component.html',
+  styleUrls: ['./admin-sidebar.component.css']
 })
 export class AdminSidebarComponent {
   @Input() activeTab: 'add' | 'list' = 'add';

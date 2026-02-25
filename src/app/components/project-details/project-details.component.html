@@ -1,0 +1,165 @@
+<section class="container py-4 py-md-5 project-details-page">
+  <div class="small text-muted mb-2">
+    <a routerLink="/" class="text-decoration-none">Home</a> /
+    <a routerLink="/projects" class="text-decoration-none">Projects</a> /
+    <span>{{ project?.name || project?.title || 'Details' }}</span>
+  </div>
+
+  <div class="mb-3">
+    <a routerLink="/projects" class="text-decoration-none">← Back to Projects</a>
+  </div>
+
+  <div *ngIf="loading" class="text-center py-5">
+    <div class="spinner-border" role="status">
+      <span class="visually-hidden">Loading project...</span>
+    </div>
+  </div>
+
+  <div *ngIf="!loading && loadError" class="alert alert-warning d-flex justify-content-between align-items-center" role="alert">
+    <span>{{ loadError }}</span>
+    <button class="btn btn-sm btn-outline-dark" (click)="fetchProject(currentProjectId)" [disabled]="!currentProjectId">Retry</button>
+  </div>
+
+  <div *ngIf="!loading && !loadError && project" class="row g-4">
+    <div class="col-12 col-lg-8">
+      <div class="card border-0 shadow-sm overflow-hidden project-gallery-card">
+        <img
+          *ngIf="selectedImage"
+          [src]="selectedImage"
+          [alt]="project.name || project.title"
+          class="project-main-image"
+          loading="lazy"
+          decoding="async"
+        />
+        <div *ngIf="!selectedImage" class="project-image-placeholder d-flex align-items-center justify-content-center text-muted">
+          No Image Available
+        </div>
+      </div>
+
+      <div class="d-flex flex-wrap gap-2 mt-3" *ngIf="getOrderedImages(project).length > 1">
+        <button
+          *ngFor="let image of getOrderedImages(project)"
+          type="button"
+          class="thumb-btn"
+          [class.active]="selectedImage === image"
+          (click)="selectedImage = image"
+        >
+          <img [src]="image" alt="Project image" loading="lazy" decoding="async" />
+        </button>
+      </div>
+
+      <div class="card border-0 shadow-sm p-4 mt-4">
+        <h2 class="h5 mb-3">Price List</h2>
+        <div class="table-responsive" *ngIf="getPriceList(project).length > 0; else noPriceList">
+          <table class="table table-sm align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Configuration</th>
+                <th class="text-end">Area (Sq.Ft.)</th>
+                <th class="text-end">Price</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of getPriceList(project)">
+                <td>{{ row.configuration }}</td>
+                <td class="text-end">{{ row.area | number:'1.0-0' }}</td>
+                <td class="text-end">₹{{ row.price | number }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <ng-template #noPriceList>
+          <p class="text-muted mb-0">Price details are currently unavailable.</p>
+        </ng-template>
+      </div>
+
+      <div class="card border-0 shadow-sm p-4 mt-4">
+        <h2 class="h5 mb-3">Property's Essential Information</h2>
+        <div class="spec-grid">
+          <div class="spec-item" *ngFor="let item of getSpecItems(project)">
+            <div class="small text-muted">{{ item.label }}</div>
+            <div class="fw-semibold">{{ item.value }}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card border-0 shadow-sm p-4 mt-4">
+        <h2 class="h5 mb-3">About {{ project.name || project.title }}</h2>
+        <p class="mb-0">{{ project.description || 'Project description will be updated soon.' }}</p>
+      </div>
+
+      <div class="card border-0 shadow-sm p-4 mt-4" *ngIf="getAmenityTags(project).length > 0">
+        <h2 class="h5 mb-3">Amenities & Facilities</h2>
+        <div class="d-flex flex-wrap gap-2">
+          <span class="badge bg-light text-dark border" *ngFor="let amenity of getAmenityTags(project)">{{ amenity }}</span>
+        </div>
+      </div>
+
+      <div class="card border-0 shadow-sm p-4 mt-4" *ngIf="getFloorPlans(project).length > 0">
+        <h2 class="h5 mb-3">Project's Floor Plan</h2>
+        <div class="row g-3">
+          <div class="col-12 col-md-6" *ngFor="let plan of getFloorPlans(project)">
+            <div class="border rounded overflow-hidden">
+              <img [src]="plan" alt="Floor plan" class="floor-plan-image" loading="lazy" decoding="async" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-lg-4">
+      <div class="card border-0 shadow-sm p-4 sticky-summary">
+        <h1 class="h4 mb-1">{{ project.name || project.title }}</h1>
+        <p class="text-muted mb-2">By {{ getBuilderName(project) }}</p>
+        <p class="mb-3">📍 {{ project.location }}{{ project.city ? ', ' + project.city : '' }}</p>
+
+        <div class="h4 text-primary mb-3">₹{{ getDisplayPrice(project) | number }}</div>
+
+        <div class="summary-list d-grid gap-2 small mb-4">
+          <div class="d-flex justify-content-between"><span>Status</span><strong>{{ getDisplayStatus(project) }}</strong></div>
+          <div class="d-flex justify-content-between"><span>Configuration</span><strong>{{ getUnitConfigLabel(project) }}</strong></div>
+          <div class="d-flex justify-content-between"><span>Project Area</span><strong>{{ getTotalAreaInAcres(project) }} Acres</strong></div>
+          <div class="d-flex justify-content-between"><span>Total Units</span><strong>{{ project.numberOfUnits || 0 }}</strong></div>
+        </div>
+
+        <a class="btn btn-danger w-100" routerLink="/contact">Contact Now</a>
+      </div>
+
+      <div class="card border-0 shadow-sm p-4 mt-4">
+        <h2 class="h6 mb-3">Legal & Certificate</h2>
+        <div class="small d-grid gap-2">
+          <div class="d-flex justify-content-between"><span>RERA Number</span><strong>{{ project.reraDetails.reraNumber || 'N/A' }}</strong></div>
+          <div class="d-flex justify-content-between"><span>RERA Status</span><strong>{{ project.reraDetails.reraStatus || 'N/A' }}</strong></div>
+          <div class="d-flex justify-content-between"><span>Possession</span><strong>{{ project.reraDetails.possession || 'N/A' }}</strong></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm p-4 mt-4" *ngIf="!loading && !loadError && relatedProjects.length > 0">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h2 class="h5 mb-0">Top Projects Near You</h2>
+      <a routerLink="/projects" class="small text-decoration-none">View all</a>
+    </div>
+
+    <div class="row g-3">
+      <div class="col-12 col-md-6 col-xl-3" *ngFor="let item of relatedProjects">
+        <article class="card h-100 project-mini-card" role="button" tabindex="0" (click)="openProject(item.id)" (keydown.enter)="openProject(item.id)">
+          <img
+            *ngIf="getPrimaryImage(item)"
+            [src]="getPrimaryImage(item)"
+            [alt]="item.name || item.title"
+            class="card-img-top mini-image"
+            loading="lazy"
+            decoding="async"
+          />
+          <div class="card-body">
+            <h3 class="h6 mb-1">{{ item.name || item.title }}</h3>
+            <p class="small text-muted mb-2">{{ item.location }}{{ item.city ? ', ' + item.city : '' }}</p>
+            <div class="small fw-semibold text-primary">₹{{ getDisplayPrice(item) | number }}</div>
+          </div>
+        </article>
+      </div>
+    </div>
+  </div>
+</section>

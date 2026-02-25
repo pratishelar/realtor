@@ -6,48 +6,7 @@ import { RouterModule } from '@angular/router';
   selector: 'app-footer',
   standalone: true,
   imports: [CommonModule, RouterModule],
-  template: `
-    <footer class="footer bg-dark text-light mt-5">
-      <div class="container py-5">
-        <div class="row g-4">
-          <div class="col-12 col-md-6 col-lg-4">
-            <h3 class="mb-3">About DS Associates</h3>
-            <p class="mb-0">Your trusted partner in finding the perfect property. With years of experience and a dedicated team, we make real estate simple and accessible.</p>
-          </div>
-
-          <div class="col-12 col-md-6 col-lg-4">
-            <h3 class="mb-3">Quick Links</h3>
-            <ul class="list-unstyled">
-              <li class="mb-2"><a routerLink="/" class="text-light text-decoration-none">Home</a></li>
-              <li class="mb-2"><a routerLink="/properties" class="text-light text-decoration-none">Properties</a></li>
-              <li class="mb-2"><a routerLink="/about" class="text-light text-decoration-none">About Us</a></li>
-              <li class="mb-2"><a routerLink="/contact" class="text-light text-decoration-none">Contact Us</a></li>
-              <li class="mb-2"><a routerLink="/admin-login" class="text-light text-decoration-none">Admin Login</a></li>
-            </ul>
-          </div>
-
-          <div class="col-12 col-md-12 col-lg-4">
-            <h3 class="mb-3">Contact Info</h3>
-            <p class="mb-2">📍 123 Property Street, Real Estate City, RC 12345</p>
-            <p class="mb-2">📞 +1 (555) 123-4567</p>
-            <p class="mb-0">📧 info&#64;dsrealtor.com</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="border-top border-secondary pt-4 pb-3">
-        <div class="container d-flex flex-wrap justify-content-between align-items-center gap-3">
-          <p class="mb-0">&copy; 2026 DS Associates. All rights reserved.</p>
-          <div class="d-flex gap-3">
-            <a href="#" title="Facebook" class="text-light text-decoration-none">f</a>
-            <a href="#" title="Twitter" class="text-light text-decoration-none">𝕏</a>
-            <a href="#" title="Instagram" class="text-light text-decoration-none">📷</a>
-            <a href="#" title="LinkedIn" class="text-light text-decoration-none">in</a>
-          </div>
-        </div>
-      </div>
-    </footer>
-  `,
-  styles: []
+  templateUrl: './footer.component.html',
+  styleUrls: ['./footer.component.css']
 })
 export class FooterComponent {}

@@ -1,0 +1,138 @@
+
+    <div class="contact-container container-fluid px-0">
+      <!-- Hero Section -->
+      <section class="contact-hero text-white text-center py-5">
+        <div class="container py-4">
+          <h1 class="mb-3">Get In Touch</h1>
+          <p class="mb-0 fs-5">Have questions? We'd love to hear from you. Send us a message and we'll respond as soon as possible.</p>
+        </div>
+      </section>
+
+      <!-- Contact Content -->
+      <section class="py-5">
+        <div class="container">
+          <div class="row g-4">
+            <!-- Contact Form -->
+            <div class="col-12 col-lg-7">
+              <div class="card p-4">
+                <h2 class="mb-4">Send us a Message</h2>
+                <form (ngSubmit)="submitForm()" *ngIf="!formSubmitted" class="d-grid gap-3">
+                  <div class="form-group">
+                    <label for="name" class="form-label fw-bold">Full Name *</label>
+                    <input
+                      type="text"
+                      id="name"
+                      [(ngModel)]="formData.name"
+                      name="name"
+                      required
+                      placeholder="Your full name"
+                      class="form-control"
+                    />
+                  </div>
+
+                  
+                  <div class="row g-3">
+                    <div class="col-12 col-md-6">
+                      <label for="email" class="form-label fw-bold">Email Address *</label>
+                      <input
+                        type="email"
+                        id="email"
+                        [(ngModel)]="formData.email"
+                        name="email"
+                        required
+                        placeholder="user@example.com"
+                        class="form-control"
+                      />
+                    </div>
+                    <div class="col-12 col-md-6">
+                      <label for="phone" class="form-label fw-bold">Phone Number</label>
+                      <input
+                        type="tel"
+                        id="phone"
+                        [(ngModel)]="formData.phone"
+                        name="phone"
+                        placeholder="Enter your Phone Number"
+                        class="form-control"
+                      />
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="subject" class="form-label fw-bold">Subject *</label>
+                    <select [(ngModel)]="formData.subject" name="subject" required class="form-select">
+                    <option value="">Select a subject</option>
+                    <option value="general">General Inquiry</option>
+                    <option value="properties">Properties Question</option>
+                    <option value="selling">Interested in Selling</option>
+                    <option value="support">Support</option>
+                    <option value="partnership">Partnership Opportunity</option>
+                  </select>
+                </div>
+
+                  <div class="form-group">
+                    <label for="message" class="form-label fw-bold">Message *</label>
+                    <textarea
+                      id="message"
+                      [(ngModel)]="formData.message"
+                      name="message"
+                      required
+                      rows="5"
+                      placeholder="Tell us more about your inquiry..."
+                      class="form-control"
+                    ></textarea>
+                  </div>
+
+                  <div class="form-check">
+                    <input
+                      type="checkbox"
+                      class="form-check-input"
+                      id="subscribe"
+                      [(ngModel)]="formData.subscribe"
+                      name="subscribe"
+                    />
+                    <label class="form-check-label" for="subscribe">
+                      I'd like to receive updates and newsletters
+                    </label>
+                  </div>
+
+                  <button type="submit" class="btn btn-primary w-100 py-2 mt-3">Send Message</button>
+                </form>
+
+                <div *ngIf="formSubmitted" class="text-center py-5">
+                  <div class="display-1 text-success mb-3">✓</div>
+                  <h3 class="mb-3">Thank You!</h3>
+                  <p class="mb-4">Your message has been sent successfully. We'll get back to you within 24 hours.</p>
+                  <button (click)="resetForm()" class="btn btn-outline-primary">Send Another Message</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Contact Info -->
+            <div class="col-12 col-lg-5">
+              <h2 class="mb-4">Contact Information</h2>
+              
+              <div class="card p-4 mb-3">
+                <div class="fs-1 mb-3">📍</div>
+                <h3 class="mb-3">Office Location</h3>
+                <p class="mb-0">Shop No L 15, Choudhary Heights, Sr No 130/2/1/1, Giridhar Nagar, Warje, Pune, Maharashtra</p>
+              </div>
+
+              <div class="card p-4 mb-3">
+                <div class="fs-1 mb-3">📞</div>
+                <h3 class="mb-3">Phone</h3>
+                <p class="mb-0">Main: 9096117721</p>
+              </div>
+
+              <div class="card p-4 mb-3">
+                <div class="fs-1 mb-3">📧</div>
+                <h3 class="mb-3">Email</h3>
+                <p class="mb-0">dsassociatespune1993&#64;gmail.com</p>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  

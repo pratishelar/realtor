@@ -8,13 +8,7 @@ import { FooterComponent } from '../../components/footer/footer.component';
   selector: 'app-public-layout',
   standalone: true,
   imports: [CommonModule, RouterModule, NavbarComponent, FooterComponent],
-  template: `
-    <app-navbar></app-navbar>
-    <div class="public-layout-content container-fluid px-0">
-      <router-outlet></router-outlet>
-    </div>
-    <app-footer></app-footer>
-  `,
-  styles: []
+  templateUrl: './public-layout.component.html',
+  styleUrls: ['./public-layout.component.css']
 })
 export class PublicLayoutComponent {}

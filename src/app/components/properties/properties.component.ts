@@ -1,7 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { DocumentData, QueryDocumentSnapshot } from '@angular/fire/firestore';
 import { PropertyService } from '../../services/property.service';
 import { Property } from '../../models/property.model';
@@ -13,22 +13,28 @@ import { Property } from '../../models/property.model';
   templateUrl: './properties.component.html',
   styleUrls: ['./properties.component.css']
 })
-export class PropertiesComponent implements OnInit {
+export class PropertiesComponent implements OnInit, OnDestroy {
   private readonly fallbackImage = 'https://images.unsplash.com/photo-1493666438817-866a91353ca9?w=1200&h=800&fit=crop&q=80';
+  private readonly enableServerPagination = true;
   allProperties: Property[] = [];
   filteredProperties: Property[] = [];
   visibleProperties: Property[] = [];
   loading = false;
   loadingMore = false;
+  loadingAllForFilters = false;
   loadError = '';
   showFilters = false;
-  pageSize = 4;
+  pageSize = 8;
   currentPage = 1;
   hasMoreProperties = false;
   nextCursor: QueryDocumentSnapshot<DocumentData> | null = null;
+  serverModeActive = false;
+  fullDatasetLoaded = false;
 
   searchQuery = '';
-  selectedSearchLocation = '';
+  selectedSearchLocations: string[] = [];
+  selectedCityFilter = '';
+  selectedCityDivisionFilter = '';
   locationSuggestions: string[] = [];
   showLocationSuggestions = false;
   priceFloor = 0;
@@ -40,10 +46,12 @@ export class PropertiesComponent implements OnInit {
   minArea = 0;
   sortBy = 'newest';
   selectedCategory: 'residential' | 'commercial' = 'residential';
+  selectedListingIntent: 'buy' | 'rent' = 'buy';
   selectedPropertyTypes: string[] = [];
   selectedResale = false;
   selectedReadyToMove = false;
   selectedUnderConstruction = false;
+  private searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
   propertyTypeOptions: Array<{ key: string; label: string; category: 'residential' | 'commercial' }> = [
     { key: 'apartment', label: 'Apartment', category: 'residential' },
@@ -54,34 +62,121 @@ export class PropertiesComponent implements OnInit {
     { key: 'shop', label: 'Shop', category: 'commercial' },
   ];
 
-  constructor(private propertyService: PropertyService, private router: Router) {}
+  constructor(
+    private propertyService: PropertyService,
+    private router: Router,
+    private route: ActivatedRoute
+  ) {}
 
   ngOnInit() {
+    this.route.queryParams.subscribe((params) => {
+      const mode = (params['mode'] || '').toString().toLowerCase();
+      const city = (params['city'] || '').toString().trim();
+      const query = (params['q'] || '').toString().trim();
+      const location = (params['location'] || '').toString().trim();
+      const cityDivision = (params['cityDivision'] || '').toString().trim();
+
+      if (mode === 'residential' || mode === 'commercial') {
+        this.selectedCategory = mode;
+      }
+
+      if (city) {
+        this.selectedSearchLocations = location ? [location] : [];
+        this.selectedCityFilter = city;
+      } else {
+        this.selectedSearchLocations = location ? [location] : [];
+        this.selectedCityFilter = '';
+      }
+
+      this.selectedCityDivisionFilter = cityDivision;
+
+      this.searchQuery = query || location || '';
+
+      if (this.allProperties.length > 0) {
+        this.applyFilters();
+      }
+    });
+
     this.loadProperties();
   }
 
-  private getServerFilters() {
-    return {
-      category: this.selectedCategory,
-      resale: this.selectedResale,
-      readyToMove: this.selectedReadyToMove,
-      underConstruction: this.selectedUnderConstruction,
-    };
+  ngOnDestroy() {
+    if (this.searchDebounceTimer) {
+      clearTimeout(this.searchDebounceTimer);
+      this.searchDebounceTimer = null;
+    }
   }
 
   loadProperties() {
     this.loading = true;
     this.loadError = '';
-    this.nextCursor = null;
     this.hasMoreProperties = false;
+    this.nextCursor = null;
 
-    this.propertyService.getPropertiesPage(this.pageSize, null, this.getServerFilters()).subscribe({
-      next: (page) => {
-        const normalized = (page.items || []).map((property) => this.normalizeProperty(property));
+    if (this.enableServerPagination) {
+      this.propertyService.getPropertiesPage(this.pageSize, null).subscribe({
+        next: (pageResult) => {
+          const normalized = (pageResult.items || [])
+            .map((property) => this.normalizeProperty(property))
+            .sort((left, right) => this.getSortTimestamp(right) - this.getSortTimestamp(left));
+
+          this.updatePriceBounds(normalized);
+          this.allProperties = normalized;
+          this.serverModeActive = true;
+          this.fullDatasetLoaded = false;
+          this.hasMoreProperties = pageResult.hasMore;
+          this.nextCursor = pageResult.nextCursor;
+          this.currentPage = 1;
+          this.applyFilters();
+          this.loading = false;
+
+          this.propertyService.getProperties().subscribe({
+            next: (allItems) => {
+              const fullNormalized = (allItems || [])
+                .map((property) => this.normalizeProperty(property))
+                .sort((left, right) => this.getSortTimestamp(right) - this.getSortTimestamp(left));
+
+              this.allProperties = fullNormalized;
+              this.updatePriceBounds(fullNormalized);
+              this.fullDatasetLoaded = true;
+
+              if (!this.hasActiveFilters()) {
+                this.serverModeActive = false;
+                this.hasMoreProperties = false;
+                this.nextCursor = null;
+                this.applyFilters();
+              }
+            },
+            error: () => {
+              // Ignore warm-cache errors; server-paged data is already usable.
+            },
+          });
+        },
+        error: (error) => {
+          console.error('PropertiesComponent - Error loading paged properties:', error);
+          this.serverModeActive = false;
+          this.fullDatasetLoaded = false;
+          this.loadAllProperties();
+        },
+      });
+      return;
+    }
+
+    this.loadAllProperties();
+  }
+
+  private loadAllProperties() {
+    this.propertyService.getProperties().subscribe({
+      next: (items) => {
+        const normalized = (items || [])
+          .map((property) => this.normalizeProperty(property))
+          .sort((left, right) => this.getSortTimestamp(right) - this.getSortTimestamp(left));
         this.updatePriceBounds(normalized);
         this.allProperties = normalized;
-        this.hasMoreProperties = page.hasMore;
-        this.nextCursor = page.nextCursor;
+        this.fullDatasetLoaded = true;
+        this.serverModeActive = false;
+        this.hasMoreProperties = false;
+        this.nextCursor = null;
         this.currentPage = 1;
         this.applyFilters();
         this.loading = false;
@@ -104,28 +199,48 @@ export class PropertiesComponent implements OnInit {
       this.filteredProperties = [];
       return;
     }
+
+    if (this.serverModeActive && this.hasActiveFilters() && !this.fullDatasetLoaded) {
+      this.ensureFullDataForFilters();
+      return;
+    }
     
     let filtered = [...this.allProperties];
 
-    if (this.selectedSearchLocation && this.selectedSearchLocation.trim()) {
-      const locationQuery = this.selectedSearchLocation.toLowerCase().trim();
-      filtered = filtered.filter(
-        (p) =>
-          (p.city && p.city.toLowerCase().includes(locationQuery)) ||
-          (p.location && p.location.toLowerCase().includes(locationQuery))
-      );
+    if (this.selectedSearchLocations.length > 0) {
+      const selectedQueries = this.selectedSearchLocations
+        .map((value) => value.toLowerCase().trim())
+        .filter((value) => value.length > 0);
+
+      filtered = filtered.filter((p) => {
+        const city = (p.city || '').toLowerCase();
+        const division = (p.cityDivision || '').toLowerCase();
+        const location = (p.location || '').toLowerCase();
+
+        return selectedQueries.some(
+          (query) => city.includes(query) || division.includes(query) || location.includes(query)
+        );
+      });
+    }
+
+    if (this.selectedCityFilter && this.selectedCityFilter.trim()) {
+      const cityQuery = this.selectedCityFilter.toLowerCase().trim();
+      filtered = filtered.filter((p) => (p.city || '').toLowerCase() === cityQuery);
+    }
+
+    if (this.selectedCityDivisionFilter && this.selectedCityDivisionFilter.trim()) {
+      const divisionQuery = this.selectedCityDivisionFilter.toLowerCase().trim();
+      filtered = filtered.filter((p) => (p.cityDivision || '').toLowerCase() === divisionQuery);
     }
 
     // Search filter
-    if (!this.selectedSearchLocation && this.searchQuery && this.searchQuery.trim()) {
+    if (this.selectedSearchLocations.length === 0 && this.searchQuery && this.searchQuery.trim()) {
       const query = this.searchQuery.toLowerCase().trim();
       filtered = filtered.filter(
         (p) =>
-          (p.title && p.title.toLowerCase().includes(query)) ||
-          (p.name && p.name.toLowerCase().includes(query)) ||
           (p.city && p.city.toLowerCase().includes(query)) ||
-          (p.location && p.location.toLowerCase().includes(query)) ||
-          (p.description && p.description.toLowerCase().includes(query))
+          (p.cityDivision && p.cityDivision.toLowerCase().includes(query)) ||
+          (p.location && p.location.toLowerCase().includes(query))
       );
     }
 
@@ -164,7 +279,7 @@ export class PropertiesComponent implements OnInit {
         }
 
         const titleLower = (p.name || p.title || '').toLowerCase();
-        const descLower = p.description.toLowerCase();
+        const descLower = (p.description || '').toLowerCase();
         const isResidential =
           this.containsWholeWord(titleLower, 'apartment') ||
           this.containsWholeWord(titleLower, 'house') ||
@@ -190,6 +305,44 @@ export class PropertiesComponent implements OnInit {
           this.containsWholeWord(descLower, 'plot');
 
         return this.selectedCategory === 'residential' ? isResidential : isCommercial;
+      });
+    }
+
+    if (this.selectedListingIntent) {
+      const intent = this.selectedListingIntent === 'buy' ? 'sale' : this.selectedListingIntent.toLowerCase();
+      filtered = filtered.filter((p) => {
+        const explicitIntentValue = (p.listingIntent || '').toLowerCase().trim();
+        const explicitIntent = explicitIntentValue === 'sell' ? 'sale' : explicitIntentValue;
+
+        if (intent === 'sale') {
+          if (!explicitIntent || explicitIntent === 'sale') {
+            return true;
+          }
+
+          return explicitIntent !== 'rent';
+        }
+
+        if (explicitIntent === intent) {
+          return true;
+        }
+
+        const titleLower = (p.name || p.title || '').toLowerCase();
+        const descLower = (p.description || '').toLowerCase();
+        if (intent === 'rent') {
+          return (
+            this.containsWholeWord(titleLower, 'rent') ||
+            this.containsWholeWord(titleLower, 'rental') ||
+            this.containsWholeWord(descLower, 'rent') ||
+            this.containsWholeWord(descLower, 'rental')
+          );
+        }
+
+        return (
+          this.containsWholeWord(titleLower, 'sale') ||
+          this.containsWholeWord(titleLower, 'sell') ||
+          this.containsWholeWord(descLower, 'sale') ||
+          this.containsWholeWord(descLower, 'sell')
+        );
       });
     }
 
@@ -259,7 +412,9 @@ export class PropertiesComponent implements OnInit {
 
   resetFilters() {
     this.searchQuery = '';
-    this.selectedSearchLocation = '';
+    this.selectedSearchLocations = [];
+    this.selectedCityFilter = '';
+    this.selectedCityDivisionFilter = '';
     this.locationSuggestions = [];
     this.showLocationSuggestions = false;
     this.minPrice = 0;
@@ -269,52 +424,18 @@ export class PropertiesComponent implements OnInit {
     this.minArea = 0;
     this.sortBy = 'newest';
     this.selectedCategory = 'residential';
+    this.selectedListingIntent = 'buy';
     this.selectedPropertyTypes = [];
     this.selectedResale = false;
     this.selectedReadyToMove = false;
     this.selectedUnderConstruction = false;
-    this.loadProperties();
+    this.applyFilters();
   }
 
   updateVisibleProperties() {
     const start = (this.currentPage - 1) * this.pageSize;
     const end = start + this.pageSize;
     this.visibleProperties = this.filteredProperties.slice(start, end);
-  }
-
-  private fetchMoreProperties(onDone?: () => void) {
-    if (!this.nextCursor || this.loadingMore) {
-      if (onDone) {
-        onDone();
-      }
-      return;
-    }
-
-    this.loadingMore = true;
-    this.propertyService.getPropertiesPage(this.pageSize, this.nextCursor, this.getServerFilters()).subscribe({
-      next: (page) => {
-        const additional = (page.items || []).map((property) => this.normalizeProperty(property));
-        this.allProperties = [...this.allProperties, ...additional];
-        this.hasMoreProperties = page.hasMore;
-        this.nextCursor = page.nextCursor;
-        this.updatePriceBounds(this.allProperties);
-        const existingPage = this.currentPage;
-        this.applyFilters();
-        this.currentPage = existingPage;
-        this.updateVisibleProperties();
-        this.loadingMore = false;
-        if (onDone) {
-          onDone();
-        }
-      },
-      error: (error) => {
-        console.error('PropertiesComponent - Error loading more properties:', error);
-        this.loadingMore = false;
-        if (onDone) {
-          onDone();
-        }
-      },
-    });
   }
 
   goToPage(page: number) {
@@ -328,8 +449,13 @@ export class PropertiesComponent implements OnInit {
       return;
     }
 
-    if (this.hasMoreProperties) {
-      this.fetchMoreProperties(() => this.goToPage(page));
+    if (
+      this.serverModeActive &&
+      page === this.currentPage + 1 &&
+      this.hasMoreProperties &&
+      this.nextCursor
+    ) {
+      this.loadNextServerPage(page);
       return;
     }
 
@@ -348,8 +474,89 @@ export class PropertiesComponent implements OnInit {
   }
 
   get totalPages(): number {
-    const localPages = Math.max(1, Math.ceil(this.filteredProperties.length / this.pageSize));
-    return this.hasMoreProperties ? localPages + 1 : localPages;
+    return Math.max(1, Math.ceil(this.filteredProperties.length / this.pageSize));
+  }
+
+  private hasActiveFilters(): boolean {
+    return !!(
+      this.selectedSearchLocations.length > 0 ||
+      (this.searchQuery && this.searchQuery.trim().length > 0) ||
+      (this.selectedCityFilter && this.selectedCityFilter.trim().length > 0) ||
+      (this.selectedCityDivisionFilter && this.selectedCityDivisionFilter.trim().length > 0) ||
+      this.minPrice > this.priceFloor ||
+      this.maxPrice < this.priceCeiling ||
+      this.selectedBedrooms !== null ||
+      this.selectedBathrooms !== null ||
+      this.minArea > 0 ||
+      this.sortBy !== 'newest' ||
+      this.selectedListingIntent === 'rent' ||
+      this.selectedPropertyTypes.length > 0 ||
+      this.selectedResale ||
+      this.selectedReadyToMove ||
+      this.selectedUnderConstruction
+    );
+  }
+
+  private ensureFullDataForFilters() {
+    if (this.loadingAllForFilters) {
+      return;
+    }
+
+    this.loadingAllForFilters = true;
+    this.loading = true;
+
+    this.propertyService.getProperties().subscribe({
+      next: (items) => {
+        const normalized = (items || [])
+          .map((property) => this.normalizeProperty(property))
+          .sort((left, right) => this.getSortTimestamp(right) - this.getSortTimestamp(left));
+
+        this.allProperties = normalized;
+        this.updatePriceBounds(normalized);
+        this.fullDatasetLoaded = true;
+        this.serverModeActive = false;
+        this.hasMoreProperties = false;
+        this.nextCursor = null;
+        this.loadingAllForFilters = false;
+        this.loading = false;
+        this.applyFilters();
+      },
+      error: (error) => {
+        console.error('PropertiesComponent - Error loading full dataset for filters:', error);
+        this.loadingAllForFilters = false;
+        this.loading = false;
+      },
+    });
+  }
+
+  private loadNextServerPage(targetPage: number) {
+    if (!this.nextCursor || this.loadingMore) {
+      return;
+    }
+
+    this.loadingMore = true;
+
+    this.propertyService.getPropertiesPage(this.pageSize, this.nextCursor).subscribe({
+      next: (pageResult) => {
+        const incoming = (pageResult.items || [])
+          .map((property) => this.normalizeProperty(property));
+
+        const merged = [...this.allProperties, ...incoming]
+          .sort((left, right) => this.getSortTimestamp(right) - this.getSortTimestamp(left));
+
+        this.allProperties = merged;
+        this.filteredProperties = merged;
+        this.hasMoreProperties = pageResult.hasMore;
+        this.nextCursor = pageResult.nextCursor;
+        this.currentPage = targetPage;
+        this.updateVisibleProperties();
+        this.loadingMore = false;
+      },
+      error: (error) => {
+        console.error('PropertiesComponent - Error loading next server page:', error);
+        this.loadingMore = false;
+      },
+    });
   }
 
   getPaginationPages(): number[] {
@@ -381,12 +588,8 @@ export class PropertiesComponent implements OnInit {
   }
 
   onSearchInput() {
-    if (this.selectedSearchLocation && this.searchQuery.trim().toLowerCase() !== this.selectedSearchLocation.toLowerCase()) {
-      this.selectedSearchLocation = '';
-    }
-
     this.updateLocationSuggestions();
-    this.applyFilters();
+    this.scheduleFilterApply();
   }
 
   onSearchFocus() {
@@ -400,20 +603,43 @@ export class PropertiesComponent implements OnInit {
   }
 
   selectLocationSuggestion(suggestion: string) {
-    this.selectedSearchLocation = suggestion;
-    this.searchQuery = suggestion;
-    this.locationSuggestions = [];
-    this.showLocationSuggestions = false;
+    const exists = this.selectedSearchLocations.some(
+      (value) => value.toLowerCase() === suggestion.toLowerCase()
+    );
+
+    if (!exists) {
+      this.selectedSearchLocations = [...this.selectedSearchLocations, suggestion];
+    }
+
+    this.searchQuery = '';
+    this.updateLocationSuggestions();
     this.applyFilters();
   }
 
-  clearSelectedLocation(event?: Event) {
+  removeSelectedLocation(location: string, event?: Event) {
     event?.stopPropagation();
-    this.selectedSearchLocation = '';
-    this.searchQuery = '';
-    this.locationSuggestions = [];
-    this.showLocationSuggestions = false;
+    this.selectedSearchLocations = this.selectedSearchLocations.filter(
+      (value) => value.toLowerCase() !== location.toLowerCase()
+    );
+    this.updateLocationSuggestions();
     this.applyFilters();
+  }
+
+  onCityFilterChange() {
+    this.updateLocationSuggestions();
+    this.applyFilters();
+  }
+
+  getAvailableCities(): string[] {
+    const uniqueCities = Array.from(
+      new Set(
+        this.allProperties
+          .map((property) => (property.city || '').trim())
+          .filter((city) => city.length > 0)
+      )
+    );
+
+    return uniqueCities.sort((left, right) => left.localeCompare(right));
   }
 
   onMinPriceChange() {
@@ -435,11 +661,15 @@ export class PropertiesComponent implements OnInit {
   onCategoryChange() {
     const allowed = new Set(this.getAvailablePropertyTypes().map((type) => type.key));
     this.selectedPropertyTypes = this.selectedPropertyTypes.filter((typeKey) => allowed.has(typeKey));
-    this.loadProperties();
+    this.applyFilters();
+  }
+
+  onListingIntentChange() {
+    this.applyFilters();
   }
 
   onPossessionFilterChange() {
-    this.loadProperties();
+    this.applyFilters();
   }
 
   getAvailablePropertyTypes(): Array<{ key: string; label: string; category: 'residential' | 'commercial' }> {
@@ -501,43 +731,52 @@ export class PropertiesComponent implements OnInit {
   }
 
   getDisplayPrice(property: Property): number {
-    return Number(property.priceDetails.totalPrice || property.price || property.priceDetails.basePrice || 0);
+    return Number(property.priceDetails?.totalPrice || property.price || property.priceDetails?.basePrice || 0);
   }
 
   getDisplayArea(property: Property): number {
-    return Number(property.size.totalArea || property.area || property.size.carpetArea || 0);
+    return Number(property.size?.totalArea || property.area || property.size?.carpetArea || 0);
   }
 
   getDisplayStatus(property: Property): string {
-    if (property.reraDetails.possession) {
+    if (property.reraDetails?.possession) {
       return property.reraDetails.possession;
     }
 
-    if (property.status.resale) {
+    if (property.status?.resale) {
       return 'Resale';
     }
 
-    if (property.status.readyToMove) {
+    if (property.status?.readyToMove) {
       return 'Ready to Move';
     }
 
-    if (property.status.underConstruction) {
+    if (property.status?.underConstruction) {
       return 'Under Construction';
     }
 
-    if (property.status.preConstruction) {
+    if (property.status?.preConstruction) {
       return 'Pre Construction';
     }
 
     return property.possessionStatus || 'N/A';
   }
 
+  getListingIntentLabel(property: Property): string {
+    const normalized = (property.listingIntent || '').toString().toLowerCase().trim();
+    if (normalized === 'rent') {
+      return 'Rent';
+    }
+
+    return 'Buy';
+  }
+
   getPrimaryBedroomCount(property: Property): number {
-    if (property.unitConfig['5bhk']) return 5;
-    if (property.unitConfig['4bhk']) return 4;
-    if (property.unitConfig['3bhk']) return 3;
-    if (property.unitConfig['2bhk']) return 2;
-    if (property.unitConfig['1bhk']) return 1;
+    if (property.unitConfig?.['5bhk']) return 5;
+    if (property.unitConfig?.['4bhk']) return 4;
+    if (property.unitConfig?.['3bhk']) return 3;
+    if (property.unitConfig?.['2bhk']) return 2;
+    if (property.unitConfig?.['1bhk']) return 1;
     return Number(property.bedrooms || 0);
   }
 
@@ -566,21 +805,43 @@ export class PropertiesComponent implements OnInit {
     return new RegExp(`\\b${word}\\b`, 'i').test(text || '');
   }
 
+  private scheduleFilterApply(delayMs = 140) {
+    if (this.searchDebounceTimer) {
+      clearTimeout(this.searchDebounceTimer);
+    }
+
+    this.searchDebounceTimer = setTimeout(() => {
+      this.applyFilters();
+      this.searchDebounceTimer = null;
+    }, delayMs);
+  }
+
   private updateLocationSuggestions() {
     const query = this.searchQuery.toLowerCase().trim();
-    if (!query || !!this.selectedSearchLocation) {
+    const selectedCity = this.selectedCityFilter.toLowerCase().trim();
+
+    if (!selectedCity || !query) {
       this.locationSuggestions = [];
       this.showLocationSuggestions = false;
       return;
     }
 
-    const locationPool = this.allProperties.flatMap((property) => [property.city, property.location])
+    const scopedProperties = this.allProperties.filter(
+      (property) => (property.city || '').toLowerCase() === selectedCity
+    );
+
+    const locationPool = scopedProperties.flatMap((property) => [property.cityDivision, property.location])
       .map((value) => (value || '').trim())
       .filter((value) => value.length > 0);
 
     const uniqueLocations = Array.from(new Set(locationPool));
     this.locationSuggestions = uniqueLocations
       .filter((value) => value.toLowerCase().includes(query))
+      .filter(
+        (value) => !this.selectedSearchLocations.some(
+          (selected) => selected.toLowerCase() === value.toLowerCase()
+        )
+      )
       .sort((a, b) => a.localeCompare(b))
       .slice(0, 8);
 
@@ -596,6 +857,53 @@ export class PropertiesComponent implements OnInit {
       ...property,
       title: property.title || property.name || '',
       name: property.name || property.title || '',
+      description: property.description || '',
+      city: property.city || '',
+      cityDivision: property.cityDivision || '',
+      location: property.location || '',
+      listingIntent: (property.listingIntent || '').toString().toLowerCase() === 'rent'
+        ? 'rent'
+        : ['sale', 'sell'].includes((property.listingIntent || '').toString().toLowerCase())
+          ? 'sale'
+          : '',
+      status: {
+        underConstruction: !!property.status?.underConstruction,
+        readyToMove: !!property.status?.readyToMove,
+        resale: !!property.status?.resale,
+        preConstruction: !!property.status?.preConstruction,
+      },
+      unitConfig: {
+        '1bhk': !!property.unitConfig?.['1bhk'],
+        '2bhk': !!property.unitConfig?.['2bhk'],
+        '3bhk': !!property.unitConfig?.['3bhk'],
+        '4bhk': !!property.unitConfig?.['4bhk'],
+        '5bhk': !!property.unitConfig?.['5bhk'],
+      },
+      size: {
+        carpetArea: Number(property.size?.carpetArea || 0),
+        builtArea: Number(property.size?.builtArea || property.size?.totalArea || property.area || 0),
+        totalArea: Number(property.size?.totalArea || property.size?.builtArea || property.area || 0),
+        label: property.size?.label,
+      },
+      reraDetails: {
+        reraNumber: property.reraDetails?.reraNumber || '',
+        reraStatus: property.reraDetails?.reraStatus || '',
+        possession: property.reraDetails?.possession || '',
+      },
+      priceDetails: {
+        basePrice: Number(property.priceDetails?.basePrice || property.price || 0),
+        governmentCharge: Number(property.priceDetails?.governmentCharge || 0),
+        totalPrice: Number(property.priceDetails?.totalPrice || property.price || property.priceDetails?.basePrice || 0),
+      },
+      propertyType: {
+        apartment: !!property.propertyType?.apartment,
+        villa: !!property.propertyType?.villa,
+        house: !!property.propertyType?.house,
+        plot: !!property.propertyType?.plot,
+        office: !!property.propertyType?.office,
+        shop: !!property.propertyType?.shop,
+      },
+      amenities: Array.isArray(property.amenities) ? property.amenities : [],
       mainImage: property.mainImage || safeImages[0] || undefined,
       images: safeImages,
     };
@@ -613,5 +921,24 @@ export class PropertiesComponent implements OnInit {
     this.priceCeiling = Math.max(roundedCeiling, 1000000);
     this.minPrice = this.priceFloor;
     this.maxPrice = this.priceCeiling;
+  }
+
+  private getSortTimestamp(property: Property): number {
+    const value = property.updatedAt || property.createdAt;
+
+    if (!value) {
+      return 0;
+    }
+
+    if (value instanceof Date) {
+      return value.getTime();
+    }
+
+    if (typeof value === 'object' && value !== null && 'seconds' in value) {
+      return Number((value as { seconds?: unknown }).seconds || 0) * 1000;
+    }
+
+    const parsed = new Date(value as string).getTime();
+    return Number.isNaN(parsed) ? 0 : parsed;
   }
 }

@@ -26,6 +26,8 @@ export class AdminDashboardComponent implements OnInit {
   uploadProgress = 0;
   selectedPreviews: string[] = [];
   editingId: string | null = null;
+  selectedBulkListingIntent: 'sale' | 'rent' = 'sale';
+  bulkUpdatingListingIntent = false;
 
   sportsAmenityOptions: string[] = [
     'Clubhouse',
@@ -61,6 +63,12 @@ export class AdminDashboardComponent implements OnInit {
     'Spa',
     'Senior Citizen Area',
   ];
+
+  cityOptions: string[] = ['Pune', 'Mumbai'];
+  cityDivisionOptions: Record<string, string[]> = {
+    Pune: ['Pune east', 'Pune west', 'Pune north', 'Pune south', 'PCMC'],
+    Mumbai: ['Mumbai western', 'Thane', 'Mumbai central', 'Vashi', 'Mira Bhayandar', 'Panvel', 'Bhewandi', 'Dombivli'],
+  };
 
   formData: Property = this.getDefaultProperty();
 
@@ -184,6 +192,13 @@ export class AdminDashboardComponent implements OnInit {
     this.formData.priceList = (this.formData.priceList || []).filter((_, i) => i !== index);
   }
 
+  onCityChanged() {
+    const divisions = this.cityDivisionOptions[this.formData.city] || [];
+    if (!divisions.includes(this.formData.cityDivision)) {
+      this.formData.cityDivision = '';
+    }
+  }
+
   isAmenitySelected(category: 'sports' | 'convenience' | 'leisure', amenity: string): boolean {
     return (this.formData.amenitiesByCategory[category] || []).includes(amenity);
   }
@@ -298,6 +313,19 @@ export class AdminDashboardComponent implements OnInit {
       mainImage: property.mainImage || (Array.isArray(property.images) && property.images.length > 0 ? property.images[0] : undefined),
     };
 
+    const normalizedIntent = (this.formData.listingIntent || '').toString().toLowerCase();
+    if (normalizedIntent === 'sell') {
+      this.formData.listingIntent = 'sale';
+    } else if (normalizedIntent !== 'rent' && normalizedIntent !== 'sale') {
+      this.formData.listingIntent = 'sale';
+    }
+
+    if (!this.cityOptions.includes(this.formData.city)) {
+      this.formData.city = this.formData.city?.toLowerCase().includes('mumbai') ? 'Mumbai' : 'Pune';
+    }
+
+    this.onCityChanged();
+
     if ((!this.formData.amenitiesByCategory.sports.length && !this.formData.amenitiesByCategory.convenience.length && !this.formData.amenitiesByCategory.leisure.length) && this.formData.amenities.length > 0) {
       this.formData.amenitiesByCategory.sports = this.formData.amenities.filter((a) => this.sportsAmenityOptions.includes(a));
       this.formData.amenitiesByCategory.convenience = this.formData.amenities.filter((a) => this.convenienceAmenityOptions.includes(a));
@@ -322,6 +350,40 @@ export class AdminDashboardComponent implements OnInit {
     }
   }
 
+  updateAllPropertiesListingIntent() {
+    if (this.bulkUpdatingListingIntent) {
+      return;
+    }
+
+    const intentLabel = this.selectedBulkListingIntent === 'rent' ? 'Rent' : 'Sale';
+    const confirmed = confirm(`Update listing type to ${intentLabel} for all properties in DB?`);
+    if (!confirmed) {
+      return;
+    }
+
+    this.bulkUpdatingListingIntent = true;
+    this.propertyService.updateListingIntentForAllProperties(this.selectedBulkListingIntent)
+      .pipe(
+        finalize(() => {
+          this.bulkUpdatingListingIntent = false;
+        })
+      )
+      .subscribe({
+        next: (count) => {
+          this.formData.listingIntent = this.selectedBulkListingIntent;
+          this.myProperties = this.myProperties.map((property) => ({
+            ...property,
+            listingIntent: this.selectedBulkListingIntent,
+          }));
+          alert(`Updated ${count} properties to ${intentLabel}.`);
+        },
+        error: (error) => {
+          console.error('Error updating listing type for all properties:', error);
+          alert('Bulk update failed. Please try again.');
+        },
+      });
+  }
+
   cancelEdit() {
     this.resetForm();
   }
@@ -332,6 +394,7 @@ export class AdminDashboardComponent implements OnInit {
       title: '',
       location: '',
       city: '',
+      cityDivision: '',
       description: '',
       numberOfUnits: 0,
       priceDetails: {
@@ -372,6 +435,7 @@ export class AdminDashboardComponent implements OnInit {
       images: [],
       mainImage: undefined,
       category: '',
+      listingIntent: 'sale',
       propertyType: {
         apartment: false,
         villa: false,
@@ -431,9 +495,11 @@ export class AdminDashboardComponent implements OnInit {
       title: this.formData.name,
       location: this.formData.location,
       city: this.formData.city,
+      cityDivision: this.formData.cityDivision,
       description: this.formData.description,
       numberOfUnits: Number(this.formData.numberOfUnits) || 0,
       category: this.formData.category,
+      listingIntent: this.formData.listingIntent === 'rent' ? 'rent' : 'sale',
       propertyType: {
         apartment: !!this.formData.propertyType.apartment,
         villa: !!this.formData.propertyType.villa,

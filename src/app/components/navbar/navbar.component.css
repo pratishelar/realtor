@@ -1,0 +1,23 @@
+.brand-text {
+	color: #fff;
+	font-weight: 700;
+	font-size: 1.05rem;
+	line-height: 1;
+	white-space: nowrap;
+}
+
+.navbar-logo {
+	height: 42px;
+	width: auto;
+	display: block;
+}
+
+@media (max-width: 767.98px) {
+	.brand-text {
+		font-size: 0.9rem;
+	}
+
+	.navbar-logo {
+		height: 34px;
+	}
+}

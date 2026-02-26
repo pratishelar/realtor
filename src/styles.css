@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-
 /* Global typography system */
 :root {
   --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -218,17 +216,8 @@ app-root {
   color: #fff;
 }
 
-.home-container .hero h1,
-.home-container .hero h2,
-.home-container .hero h3,
-.home-container .hero h4,
-.home-container .hero h5,
-.home-container .hero h6,
-.home-container .hero p,
-.home-container .hero span,
-.home-container .hero li,
-.home-container .hero .text-muted,
-.home-container .hero .small {
+.home-container .hero .hero-content > h1,
+.home-container .hero .hero-content > p {
   color: #fff !important;
 }
 

@@ -33,7 +33,17 @@
                   </div>
                   <div class="form-group">
                     <label>City</label>
-                    <input type="text" [(ngModel)]="formData.city" name="city" required class="form-control" />
+                    <select [(ngModel)]="formData.city" (ngModelChange)="onCityChanged()" name="city" required class="form-control">
+                      <option value="" disabled>Select city</option>
+                      <option *ngFor="let city of cityOptions" [value]="city">{{ city }}</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label>City Division</label>
+                    <select [(ngModel)]="formData.cityDivision" name="cityDivision" required class="form-control" [disabled]="!formData.city">
+                      <option value="" disabled>Select city division</option>
+                      <option *ngFor="let division of cityDivisionOptions[formData.city] || []" [value]="division">{{ division }}</option>
+                    </select>
                   </div>
                 </div>
 
@@ -47,6 +57,14 @@
                   <div class="d-flex gap-3 flex-wrap">
                     <label><input type="radio" [(ngModel)]="formData.category" name="category" value="residential" /> Residential</label>
                     <label><input type="radio" [(ngModel)]="formData.category" name="category" value="commercial" /> Commercial</label>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label>Listing Type</label>
+                  <div class="d-flex gap-3 flex-wrap">
+                    <label><input type="radio" [(ngModel)]="formData.listingIntent" name="listingIntent" value="sale" /> Sale</label>
+                    <label><input type="radio" [(ngModel)]="formData.listingIntent" name="listingIntent" value="rent" /> Rent</label>
                   </div>
                 </div>
 
@@ -256,6 +274,24 @@
           </div>
 
           <div *ngIf="activeTab === 'list'" class="tab-content card p-3">
+            <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-3">
+              <h3 class="mb-0">My Properties</h3>
+              <div class="d-flex align-items-center gap-2">
+                <select [(ngModel)]="selectedBulkListingIntent" class="form-control" style="max-width: 140px;">
+                  <option value="sale">Sale</option>
+                  <option value="rent">Rent</option>
+                </select>
+                <button
+                  type="button"
+                  class="btn btn-outline-primary"
+                  [disabled]="bulkUpdatingListingIntent"
+                  (click)="updateAllPropertiesListingIntent()"
+                >
+                  {{ bulkUpdatingListingIntent ? 'Updating...' : 'Update All in DB' }}
+                </button>
+              </div>
+            </div>
+
             <div *ngIf="loadingProperties" class="loading">
               <div class="spinner"></div>
               Loading properties...
@@ -272,10 +308,11 @@
               <div *ngFor="let prop of myProperties" class="property-card">
                 <div class="property-header">
                   <h3>{{ prop.name || prop.title }}</h3>
-                  <span class="property-price">\${{ (prop.priceDetails.totalPrice || prop.price) | number }}</span>
+                  <span class="property-price">{{ (prop.priceDetails.totalPrice || prop.price) | currency:'INR':'symbol':'1.0-0':'en-IN' }}</span>
                 </div>
                 <div class="property-details">
-                  <p class="location">📍 {{ prop.location }}{{ prop.city ? ', ' + prop.city : '' }}</p>
+                  <p class="location">📍 {{ prop.location }}{{ prop.cityDivision ? ', ' + prop.cityDivision : '' }}{{ prop.city ? ', ' + prop.city : '' }}</p>
+                  <p class="mb-2"><strong>Listing Type:</strong> {{ (prop.listingIntent || 'sale') === 'rent' ? 'Rent' : 'Sale' }}</p>
                   <div class="property-specs">
                     <span class="spec">🏢 {{ prop.numberOfUnits || 0 }} Units</span>
                     <span class="spec">📐 {{ (prop.size.builtArea || prop.size.totalArea || prop.area) | number }} sqft</span>

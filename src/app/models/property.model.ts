@@ -60,6 +60,7 @@ export interface Property {
   title: string;
   location: string;
   city: string;
+  cityDivision: string;
   description: string;
   numberOfUnits: number;
 
@@ -75,6 +76,7 @@ export interface Property {
   images: string[];
   mainImage?: string;
   category: 'residential' | 'commercial' | '';
+  listingIntent?: 'sale' | 'rent' | '';
   propertyType: PropertyType;
 
   price: number;

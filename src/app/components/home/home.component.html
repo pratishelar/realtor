@@ -1,39 +1,132 @@
 
     <div class="home-container container-fluid px-0">
       <!-- HERO SECTION -->
-      <section class="hero">
+      <section class="hero" [style.background-image]="heroBackgroundStyle">
         <div class="hero-overlay"></div>
         <div class="hero-content">
           <h1>Find Your Dream Property</h1>
           <p>Discover premium real estate opportunities with our expert guidance</p>
-          <div class="hero-search input-group">
-            <input class="form-control" type="text" [(ngModel)]="searchQuery" placeholder="Search by location..." (keyup.enter)="search()">
-            <button (click)="search()" class="btn-search btn btn-primary">Search</button>
+          <div class="hero-search-card">
+            <div class="search-category-strip" role="tablist" aria-label="Search categories">
+              <button
+                *ngFor="let category of searchCategories"
+                type="button"
+                class="category-item"
+                [attr.data-category]="category"
+                [class.active]="activeSearchCategory === category"
+                (click)="activeSearchCategory = category"
+              >
+                <span>{{ category }}</span>
+              </button>
+            </div>
+
+            <div class="hero-search-controls">
+              <div class="location-select-wrap" (click)="$event.stopPropagation()">
+                <button
+                  type="button"
+                  class="city-dropdown-trigger"
+                  [attr.aria-expanded]="cityDropdownOpen"
+                  aria-haspopup="listbox"
+                  aria-label="Select city"
+                  (click)="toggleCityDropdown(); $event.stopPropagation()"
+                >
+                  <span class="city-field-label">City</span>
+                  <span class="city-current-value">{{ selectedCityDisplay }}</span>
+                  <span class="caret-icon" [class.open]="cityDropdownOpen" aria-hidden="true"></span>
+                </button>
+
+                <div class="city-dropdown-menu" *ngIf="cityDropdownOpen" role="listbox" aria-label="Cities">
+                  <button
+                    type="button"
+                    class="city-option"
+                    *ngFor="let city of supportedCities"
+                    [class.active]="city.toLowerCase() === selectedCityDisplay.toLowerCase()"
+                    (click)="selectCity(city); $event.stopPropagation()"
+                  >
+                    {{ city }}
+                  </button>
+                </div>
+              </div>
+
+              <div class="search-input-wrap">
+                <span class="search-icon">⌕</span>
+                <input
+                  class="search-input"
+                  type="text"
+                  [(ngModel)]="searchQuery"
+                  placeholder="Search by location"
+                  (input)="onSearchInput()"
+                  (focus)="onSearchFocus()"
+                  (blur)="onSearchBlur()"
+                  (keyup.enter)="search()"
+                >
+
+                <div class="home-search-suggestions list-group" *ngIf="showSearchSuggestions && searchSuggestions.length > 0">
+                  <button
+                    type="button"
+                    class="list-group-item list-group-item-action"
+                    *ngFor="let suggestion of searchSuggestions"
+                    (mousedown)="$event.preventDefault()"
+                    (click)="selectSearchSuggestion(suggestion)"
+                  >
+                    {{ suggestion }}
+                  </button>
+                </div>
+              </div>
+
+              <button (click)="search()" class="search-btn" type="button">Search</button>
+            </div>
           </div>
         </div>
       </section>
 
-      <!-- STATS SECTION -->
-      <section class="stats container py-5">
-        <div class="row g-4">
-          <div class="col-6 col-md-4">
-            <div class="stat-card card text-center p-4">
-              <h3 class="mb-2">{{ activeListingsCount | number }}</h3>
-              <p class="mb-0">Active Listings</p>
-            </div>
+      <!-- HOT PROJECTS SECTION -->
+      <section class="hot-projects-section container py-4 py-md-5">
+        <div class="hot-projects-card">
+          <h2 class="hot-projects-title mb-4">Hot Selling Real Estate Projects in {{ currentHotProjectsCity }}</h2>
+
+          <div class="hot-projects-filters mb-4">
+            <button
+              *ngFor="let region of currentCityRegions"
+              type="button"
+              class="region-chip"
+              [class.active]="activeHotProjectsRegion === region"
+              (click)="setHotProjectsRegion(region)"
+            >
+              {{ region }}
+            </button>
           </div>
-          <div class="col-6 col-md-4">
-            <div class="stat-card card text-center p-4">
-              <h3 class="mb-2">100+</h3>
-              <p class="mb-0">Happy Clients</p>
+
+          <div class="hot-projects-carousel-wrap">
+            <div class="hot-projects-track" #hotProjectsTrack>
+              <article class="hot-project-card" *ngFor="let project of filteredHotProjects; index as index">
+                <span class="project-rank">{{ index + 1 }}</span>
+                <div class="project-image-wrap">
+                  <img [src]="getHotProjectImage(project)" [alt]="project.name || project.title" loading="lazy" decoding="async" (error)="handleImageError($event)">
+                </div>
+                <div class="project-card-content">
+                  <h3 class="mb-1">{{ project.name || project.title }}</h3>
+                  <p class="project-location mb-1">{{ project.location }}{{ project.cityDivision ? ', ' + project.cityDivision : '' }}</p>
+                  <p class="project-price mb-0">{{ (project.priceDetails.totalPrice || project.price || 0) | currency:'INR':'symbol':'1.0-0':'en-IN' }}</p>
+                </div>
+              </article>
+
+              <div class="no-hot-projects" *ngIf="!loadingFeatured && filteredHotProjects.length === 0">
+                No {{ activeSearchCategory.toLowerCase() }} projects found for this subdivision.
+              </div>
             </div>
+
+            <button
+              *ngIf="filteredHotProjects.length > 3"
+              class="carousel-next-btn"
+              type="button"
+              aria-label="Scroll projects"
+              (click)="scrollHotProjects()"
+            >
+              ›
+            </button>
           </div>
-          <div class="col-6 col-md-4">
-            <div class="stat-card card text-center p-4">
-              <h3 class="mb-2">80 Cr+</h3>
-              <p class="mb-0">Properties Sold</p>
-            </div>
-          </div>
+
         </div>
       </section>
 
@@ -59,7 +152,7 @@
                 <div *ngIf="!property.images || property.images.length === 0" class="no-image">
                   No Image Available
                 </div>
-                <span class="price-badge">\${{ property.price | number }}</span>
+                <span class="price-badge">{{ property.price | currency:'INR':'symbol':'1.0-0':'en-IN' }}</span>
               </div>
               <div class="property-info p-3">
                 <h3 class="mb-2">{{ property.title }}</h3>
@@ -70,39 +163,6 @@
                   <span class="spec">📐 {{ property.area | number }} sqft</span>
                 </div>
                 <button class="btn btn-outline-primary w-100" (click)="viewProperty(property.id)">View Details</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- TESTIMONIALS SECTION -->
-      <section class="testimonials bg-light py-5">
-        <div class="container">
-          <div class="section-header text-center mb-5">
-            <h2 class="mb-3">What Clients Say</h2>
-            <p class="text-muted">Real experiences from our satisfied customers</p>
-          </div>
-          <div class="row g-4">
-            <div class="col-12 col-md-4">
-              <div class="testimonial-card card h-100 p-4">
-                <div class="stars mb-3">⭐⭐⭐⭐⭐</div>
-                <p class="mb-3">"Exceptional service! The team helped us find the perfect home in just two weeks."</p>
-                <p class="author mb-0 fw-bold">- Sarah Johnson</p>
-              </div>
-            </div>
-            <div class="col-12 col-md-4">
-              <div class="testimonial-card card h-100 p-4">
-                <div class="stars mb-3">⭐⭐⭐⭐⭐</div>
-                <p class="mb-3">"Professional, knowledgeable, and always available. Highly recommended!"</p>
-                <p class="author mb-0 fw-bold">- Michael Chen</p>
-              </div>
-            </div>
-            <div class="col-12 col-md-4">
-              <div class="testimonial-card card h-100 p-4">
-                <div class="stars mb-3">⭐⭐⭐⭐⭐</div>
-                <p class="mb-3">"They negotiated an amazing deal for us. Truly invaluable service!"</p>
-                <p class="author mb-0 fw-bold">- Emily Rodriguez</p>
               </div>
             </div>
           </div>

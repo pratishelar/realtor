@@ -16,8 +16,9 @@ import {
   startAfter,
   QueryDocumentSnapshot,
   DocumentData,
+  writeBatch,
 } from '@angular/fire/firestore';
-import { Observable, from, of } from 'rxjs';
+import { Observable, concat, from, of } from 'rxjs';
 import { map, tap } from 'rxjs/operators';
 import { Property } from '../models/property.model';
 
@@ -30,6 +31,8 @@ export interface PropertyQueryFilters {
   readyToMove?: boolean;
   underConstruction?: boolean;
 }
+
+export type ListingIntent = 'sale' | 'rent';
 
 export interface PropertyPageResult {
   items: Property[];
@@ -44,11 +47,83 @@ export class PropertyService {
   private propertiesCollection;
   private cachedProperties: Property[] = [];
   private cacheTimestamp = 0;
-  private readonly cacheTtlMs = 120000;
+  private readonly cacheTtlMs = 600000;
+  private readonly cacheStorageKey = 'realtor.properties.cache.v1';
+  private readonly cacheTimestampStorageKey = 'realtor.properties.cache.ts.v1';
   private inflightPropertiesRequest$: Observable<Property[]> | null = null;
 
   constructor(private firestore: Firestore) {
     this.propertiesCollection = collection(this.firestore, 'properties');
+    this.restoreCacheFromStorage();
+  }
+
+  private normalizeListingIntent(value: unknown): 'sale' | 'rent' | '' {
+    const normalized = (value || '').toString().toLowerCase().trim();
+    if (normalized === 'sale' || normalized === 'rent') {
+      return normalized;
+    }
+
+    if (normalized === 'sell') {
+      return 'sale';
+    }
+
+    return '';
+  }
+
+  private canUseStorage(): boolean {
+    return typeof window !== 'undefined' && !!window.localStorage;
+  }
+
+  private restoreCacheFromStorage(): void {
+    if (!this.canUseStorage()) {
+      return;
+    }
+
+    try {
+      const serialized = window.localStorage.getItem(this.cacheStorageKey);
+      const serializedTs = window.localStorage.getItem(this.cacheTimestampStorageKey);
+
+      if (!serialized || !serializedTs) {
+        return;
+      }
+
+      const parsed = JSON.parse(serialized);
+      const parsedTs = Number(serializedTs);
+
+      if (Array.isArray(parsed) && Number.isFinite(parsedTs) && parsedTs > 0) {
+        this.cachedProperties = parsed;
+        this.cacheTimestamp = parsedTs;
+      }
+    } catch {
+      this.cachedProperties = [];
+      this.cacheTimestamp = 0;
+    }
+  }
+
+  private persistCacheToStorage(): void {
+    if (!this.canUseStorage()) {
+      return;
+    }
+
+    try {
+      window.localStorage.setItem(this.cacheStorageKey, JSON.stringify(this.cachedProperties));
+      window.localStorage.setItem(this.cacheTimestampStorageKey, String(this.cacheTimestamp));
+    } catch {
+      // Ignore storage write errors silently.
+    }
+  }
+
+  private clearPersistedCache(): void {
+    if (!this.canUseStorage()) {
+      return;
+    }
+
+    try {
+      window.localStorage.removeItem(this.cacheStorageKey);
+      window.localStorage.removeItem(this.cacheTimestampStorageKey);
+    } catch {
+      // Ignore storage clear errors silently.
+    }
   }
 
   private normalizeProperty(id: string, data: any): Property {
@@ -85,6 +160,7 @@ export class PropertyService {
       price: normalizedPrice,
       location: (safeData.location || '').toString(),
       city: (safeData.city || '').toString(),
+      cityDivision: (safeData.cityDivision || '').toString(),
       numberOfUnits: Number(safeData.numberOfUnits || 0),
       priceDetails: {
         basePrice: Number(priceDetails.basePrice || safeData.price || 0),
@@ -137,6 +213,7 @@ export class PropertyService {
       images: normalizedImages,
       mainImage: (safeData.mainImage || normalizedImages[0] || '').toString() || undefined,
       category: (safeData.category || '').toString().toLowerCase() === 'commercial' ? 'commercial' : (safeData.category || '').toString().toLowerCase() === 'residential' ? 'residential' : '',
+      listingIntent: this.normalizeListingIntent(safeData.listingIntent),
       propertyType: {
         apartment: !!propertyType.apartment,
         villa: !!propertyType.villa,
@@ -162,6 +239,7 @@ export class PropertyService {
   private setCache(properties: Property[]): void {
     this.cachedProperties = properties;
     this.cacheTimestamp = Date.now();
+    this.persistCacheToStorage();
   }
 
   private mergeIntoCache(properties: Property[]): void {
@@ -181,12 +259,14 @@ export class PropertyService {
 
     this.cachedProperties = Array.from(mapById.values());
     this.cacheTimestamp = Date.now();
+    this.persistCacheToStorage();
   }
 
   private invalidateCache(): void {
     this.cachedProperties = [];
     this.cacheTimestamp = 0;
     this.inflightPropertiesRequest$ = null;
+    this.clearPersistedCache();
   }
 
   private fetchAndCacheProperties(): Observable<Property[]> {
@@ -214,8 +294,12 @@ export class PropertyService {
 
   // Get all properties
   getProperties(forceRefresh = false): Observable<Property[]> {
-    if (!forceRefresh && this.isCacheFresh() && this.cachedProperties.length > 0) {
-      return of(this.cachedProperties);
+    if (!forceRefresh && this.cachedProperties.length > 0) {
+      if (this.isCacheFresh()) {
+        return of(this.cachedProperties);
+      }
+
+      return concat(of(this.cachedProperties), this.fetchAndCacheProperties());
     }
 
     return this.fetchAndCacheProperties();
@@ -384,6 +468,36 @@ export class PropertyService {
     return from(
       deleteDoc(doc(this.propertiesCollection, id)).then(() => {
         this.invalidateCache();
+      })
+    );
+  }
+
+  updateListingIntentForAllProperties(listingIntent: ListingIntent): Observable<number> {
+    return from(
+      getDocs(this.propertiesCollection).then(async (snapshot) => {
+        const docs = snapshot.docs;
+
+        if (docs.length === 0) {
+          return 0;
+        }
+
+        const batchSize = 450;
+        for (let index = 0; index < docs.length; index += batchSize) {
+          const batch = writeBatch(this.firestore);
+          const chunk = docs.slice(index, index + batchSize);
+
+          for (const item of chunk) {
+            batch.update(item.ref, {
+              listingIntent,
+              updatedAt: new Date(),
+            });
+          }
+
+          await batch.commit();
+        }
+
+        this.invalidateCache();
+        return docs.length;
       })
     );
   }

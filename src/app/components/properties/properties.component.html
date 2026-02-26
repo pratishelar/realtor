@@ -12,13 +12,22 @@
         <div class="col-12 col-lg-3" [class.d-none]="!showFilters" [class.d-lg-block]="true">
           <div class="sidebar-filters card p-4">
 
+            <!-- City -->
+            <div class="filter-section mb-4">
+              <label class="form-label fw-bold">City</label>
+              <select [(ngModel)]="selectedCityFilter" (change)="onCityFilterChange()" class="form-select">
+                <option value="">All Cities</option>
+                <option *ngFor="let city of getAvailableCities()" [value]="city">{{ city }}</option>
+              </select>
+            </div>
+
             <!-- Search Bar -->
             <div class="filter-section mb-4">
               <label class="form-label fw-bold">Search</label>
               <div class="search-autocomplete position-relative">
                 <input
                   type="text"
-                  placeholder="Search by title, location..."
+                  placeholder="Search by location..."
                   [(ngModel)]="searchQuery"
                   (input)="onSearchInput()"
                   (focus)="onSearchFocus()"
@@ -38,14 +47,17 @@
                   </button>
                 </div>
 
-                <div class="selected-search-badge mt-2" *ngIf="selectedSearchLocation">
-                  <span class="badge text-bg-light border d-inline-flex align-items-center gap-2 py-2 px-3">
-                    {{ selectedSearchLocation }}
+                <div class="selected-search-badge mt-2" *ngIf="selectedSearchLocations.length > 0">
+                  <span
+                    class="badge text-bg-light border d-inline-flex align-items-center gap-2 py-2 px-3 me-2 mb-2"
+                    *ngFor="let selectedLocation of selectedSearchLocations"
+                  >
+                    {{ selectedLocation }}
                     <button
                       type="button"
                       class="badge-clear-btn"
-                      (click)="clearSelectedLocation($event)"
-                      aria-label="Clear selected location"
+                      (click)="removeSelectedLocation(selectedLocation, $event)"
+                      aria-label="Remove selected location"
                     >
                       ×
                     </button>
@@ -78,6 +90,33 @@
                 >
                   <span class="chip-check">✓</span>
                   <span>Commercial</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="filter-section mb-4">
+              <label class="form-label fw-bold">Buy / Rent</label>
+              <div class="property-type-chip-wrap">
+                <button
+                  type="button"
+                  class="property-type-chip"
+                  [class.active]="selectedListingIntent === 'buy'"
+                  [attr.aria-pressed]="selectedListingIntent === 'buy'"
+                  (click)="selectedListingIntent = 'buy'; onListingIntentChange()"
+                >
+                  <span class="chip-check">✓</span>
+                  <span>Buy</span>
+                </button>
+
+                <button
+                  type="button"
+                  class="property-type-chip"
+                  [class.active]="selectedListingIntent === 'rent'"
+                  [attr.aria-pressed]="selectedListingIntent === 'rent'"
+                  (click)="selectedListingIntent = 'rent'; onListingIntentChange()"
+                >
+                  <span class="chip-check">✓</span>
+                  <span>Rent</span>
                 </button>
               </div>
             </div>
@@ -266,6 +305,9 @@
                       <div class="image-count-badge position-absolute top-0 start-0 m-3 bg-dark bg-opacity-75 text-white px-2 py-1 rounded">
                         <i class="bi bi-images"></i> {{ property.images.length || 0 }}
                       </div>
+                      <div class="listing-intent-badge position-absolute bottom-0 start-0 m-3 px-3 py-1 rounded-pill fw-semibold">
+                        {{ getListingIntentLabel(property) }}
+                      </div>
                       <button class="favorite-btn position-absolute top-0 end-0 m-3 btn btn-light rounded-circle p-2" title="Add to favorites">
                         ♡
                       </button>
@@ -280,7 +322,7 @@
                         <h3 class="property-listing-title mb-2">{{ property.name || property.title }}</h3>
                         <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
                           <p class="property-subtitle text-muted mb-0">
-                            {{ getPrimaryConfig(property) }} for Sale in {{ property.city || property.location }}
+                            {{ getPrimaryConfig(property) }} for {{ getListingIntentLabel(property) }} in {{ property.city || property.location }}
                           </p>
                      
                         </div>

@@ -6,7 +6,9 @@
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "migrate:city-division": "node scripts/update-city-division.mjs",
+    "seed:city-divisions": "node scripts/seed-city-division-properties.mjs"
   },
   "private": true,
   "dependencies": {

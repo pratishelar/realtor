@@ -8,8 +8,6 @@ export const routes: Routes = [
     children: [
       { path: '', loadComponent: () => import('./components/home/home.component').then((m) => m.HomeComponent) },
       { path: 'properties', loadComponent: () => import('./components/properties/properties.component').then((m) => m.PropertiesComponent) },
-      { path: 'projects', loadComponent: () => import('./components/projects/projects.component').then((m) => m.ProjectsComponent) },
-      { path: 'projects/:id', loadComponent: () => import('./components/project-details/project-details.component').then((m) => m.ProjectDetailsComponent) },
       { path: 'property/:id', loadComponent: () => import('./components/property-detail/property-detail.component').then((m) => m.PropertyDetailComponent) },
       { path: 'about', loadComponent: () => import('./components/about/about.component').then((m) => m.AboutComponent) },
       { path: 'contact', loadComponent: () => import('./components/contact/contact.component').then((m) => m.ContactComponent) },
